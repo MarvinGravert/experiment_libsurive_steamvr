@@ -1,0 +1,1 @@
+python3 drift_test_libsurvive.py -v --force-calibrate  #--required-meas 8 --center-on-lh0 
