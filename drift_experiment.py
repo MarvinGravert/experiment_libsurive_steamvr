@@ -13,10 +13,7 @@ if os.name == 'nt':
 else:
     import pysurvive
 
-
-class Framework(Enum):
-    steamvr = "steamvr"
-    libsurvive = "libsurvive"
+from utils.general import Framework, save_data, get_file_location
 
 
 def run_drift_steamvr(frequency: int = 10, duration: float = 10*60) -> np.ndarray:
@@ -99,28 +96,6 @@ def run_drift_libsurvive(frequency=10, duration=10*60) -> np.ndarray:
     return pose_matrix
 
 
-def get_file_location(exp_type, exp_num, framework: Framework) -> Path:
-    # file naming stuff
-    DATA_PATH = Path("./data")
-    FOLDER_PATH = Path(f"{exp_type}/{framework.value}")
-    current_date = time.strftime("%Y%m%d")
-    file_path = DATA_PATH/FOLDER_PATH
-    file_path.mkdir(parents=True, exist_ok=True)
-    file_location = file_path/Path(f"{framework.value}_{current_date}_{exp_num}.txt")
-    return file_location
-
-
-def save_data(file_location: Path, pose_matrix: np.ndarray, settings=dict()):
-    current_date_time = time.strftime("%Y%m%d-%H%M%S")
-    settings_header = ""
-    for key, val in settings.items():
-        settings_header += f" {key} = {val}"
-    header = f"Drift {framework.value}; {current_date_time}; x y z w i j k;{settings_header}\n"
-    with file_location.open("w") as file:
-        file.write(header)
-        np.savetxt(file, pose_matrix)
-
-
 if __name__ == "__main__":
     exp_num = 3
     exp_type = "drift"
@@ -130,7 +105,25 @@ if __name__ == "__main__":
         "duration": 60*10  # seconds
     }
     framework = Framework("steamvr")
-    # run program
+
+    num_point = 0
+    file_location: Path = get_file_location(
+        exp_type=exp_type,
+        exp_num=exp_num,
+        framework=framework,
+        num_point=num_point
+    )
+    while file_location.exists():
+        num_point += 1
+        file_location: Path = get_file_location(
+            exp_type=exp_type,
+            exp_num=exp_num,
+            framework=framework,
+            num_point=num_point
+        )
+    """
+    RUN PROGRAM
+    """
     if framework == Framework.libsurvive:
         pose_matrix = run_drift_libsurvive(
             frequency=settings["frequency"],
@@ -149,19 +142,15 @@ if __name__ == "__main__":
         SAVE DATA
         ---------
     """
-    file_location = get_file_location(
-        exp_type=exp_type,
-        exp_num=exp_num,
-        framework=framework
+
+    save_data(
+        file_location=file_location,
+        pose_matrix=pose_matrix,
+        settings=settings,
+        framework=framework,
+        exp_type=exp_type
     )
-    if file_location.exists():
-        print("file exists")
-    else:
-        save_data(
-            file_location=file_location,
-            pose_matrix=pose_matrix,
-            settings=settings
-        )
+
     pos_mean = np.mean(pose_matrix, 0)[:3]
     pos = pose_matrix[:, :3]
     error_pos = np.linalg.norm(pos-pos_mean, axis=1)
