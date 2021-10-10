@@ -5,7 +5,6 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.lib.function_base import extract
 
 from utils.general import Framework, get_file_location, save_data
 
@@ -19,7 +18,6 @@ else:
 def run_static_accuracy_steamvr(
     frequency: int,
     duration: float,
-    num_point: int
 ) -> np.ndarray:
     """runs the static accuracy for steamvr. Collects data from both tracker
     and writes them into a matrix

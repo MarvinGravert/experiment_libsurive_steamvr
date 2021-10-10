@@ -41,3 +41,11 @@ def save_data(
     with file_location.open("w") as file:
         file.write(header)
         np.savetxt(file, pose_matrix)
+
+
+def load_data(
+        file_location: Path,
+        exp_type: str,
+        framework: Framework,
+) -> np.ndarray:
+    return np.genfromtxt(file_location, delimiter=" ", skip_header=1)
