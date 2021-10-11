@@ -12,14 +12,47 @@ def get_laser_data():
     return temp[:, :3]
 
 
-T_lt2_to_tracker = np.array([[-1, 0, 0, 25],
-                             [0, 1, 0, -85],
-                             [0, 0, -1, 0],
-                             [0, 0, 0, 1]])
-T_tracker_to_lt1 = np.array([[1, 0, 0, 25],
-                             [0, 1, 0, 85],
-                             [0, 0, 1, -9],
-                             [0, 0, 0, 1]])
+class TransformFramework():
+    def get_laser_hom(self) -> np.ndarray:
+        laser_data = get_laser_data()
+        first_kos = laser_data[8:11, :]
+        second_kos = laser_data[4:7, :]
+        first_T = build_coordinate_system_via_3_points(*first_kos)
+        sec_T = build_coordinate_system_via_3_points(*second_kos)
+        first_2_second = np.linalg.inv(sec_T)@first_T
+        return first_2_second
+
+    def get_transform(self) -> np.ndarray:
+        first_2_second = self.get_laser_hom()
+        temp = self.T_lt2_to_tracker@diff_T@self.T_tracker_to_lt1
+        return temp
+
+
+class TransformSteamVR(TransformFramework):
+
+    T_tracker_to_lt1 = np.array([[1, 0, 0, 25],
+                                [0, 1, 0, 85],
+                                [0, 0, 1, -9],
+                                [0, 0, 0, 1]])
+
+    T_lt2_to_tracker = np.array([[-1, 0, 0, 25],
+                                [0, 1, 0, -85],
+                                [0, 0, -1, 0],
+                                [0, 0, 0, 1]])
+
+
+class TransformLibsurvive(TransformFramework):
+    T_tracker_to_lt1 = np.array([[1, 0, 0, 25],
+                                [0, -1, 0, 85],
+                                [0, 0, -1, -9],
+                                [0, 0, 0, 1]])
+
+    T_lt2_to_tracker = np.array([[-1, 0, 0, 25],
+                                [0, -1, 0, 85],
+                                [0, 0, 1, 0],
+                                [0, 0, 0, 1]])
+
+
 if __name__ == "__main__":
     laser_data = get_laser_data()
     first_kos = laser_data[8:11, :]
@@ -36,5 +69,8 @@ if __name__ == "__main__":
     2. Calculate the transformation matrix between the KOS
     3. Calculate the distance from
     """
-    test = T_lt2_to_tracker@diff_T@T_tracker_to_lt1
+    t = TransformLibsurvive()
+    t = TransformSteamVR()
+
+    test = t.T_lt2_to_tracker@diff_T@t.T_tracker_to_lt1
     print(test)
