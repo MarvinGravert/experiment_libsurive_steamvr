@@ -14,12 +14,16 @@ def get_file_location(
     exp_type: str,
     exp_num: int,
     framework: Framework,
-    num_point: int
+    num_point: int,
+    date: str = None
 ) -> Path:
     # file naming stuff
     DATA_PATH = Path("./data")
     FOLDER_PATH = Path(f"{exp_type}/{framework.value}")
-    current_date = time.strftime("%Y%m%d")
+    if date:
+        current_date = date
+    else:
+        current_date = time.strftime("%Y%m%d")
     file_path = DATA_PATH/FOLDER_PATH/Path(f"{current_date}_{exp_num}")
     file_path.mkdir(parents=True, exist_ok=True)
     file_location = file_path/Path(f"{num_point}.txt")
