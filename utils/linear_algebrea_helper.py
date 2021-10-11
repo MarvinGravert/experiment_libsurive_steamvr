@@ -147,6 +147,21 @@ def eval_error_list(error_list) -> Tuple[float]:
     return rmse, mae, avg_error, std, max(np.abs(err_list))
 
 
+def calc_percentile_error(
+        error_list: List[float],
+        percentiles: List[float] = [50, 95, 99.7]
+) -> Tuple[float]:
+    """calcutates the percentile error for the given data
+
+    Args:
+        error_list (List[float]): [description]
+
+    Returns:
+        Tuple[float]: [description]
+    """
+    return [np.percentile(error_list, per) for per in percentiles]
+
+
 def single_reprojection_error(point_a, point_b, hom_matrix) -> float:
     """calculates the reprojection error for given hom matrix between
     two points correspodnance
