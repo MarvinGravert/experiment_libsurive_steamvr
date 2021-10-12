@@ -1,4 +1,5 @@
 from pathlib import Path
+from abc import ABC
 import numpy as np
 from utils.linear_algebrea_helper import (
     build_coordinate_system_via_3_points,
@@ -12,7 +13,7 @@ def get_laser_data():
     return temp[:, :3]
 
 
-class TransformFramework():
+class TransformFramework(ABC):
     def get_laser_hom(self) -> np.ndarray:
         laser_data = get_laser_data()
         first_kos = laser_data[8:11, :]
@@ -22,9 +23,19 @@ class TransformFramework():
         first_2_second = np.linalg.inv(sec_T)@first_T
         return first_2_second
 
-    def get_transform(self) -> np.ndarray:
+    def get_tracker_2_tracker(self, scaling=1) -> np.ndarray:
+        """get the transformation between the two trackers. the positional part
+        is in mm but one may use scaling to transform to meters
+
+        Args:
+            scaled (int, optional): scales the translational partn. Defaults to 1.
+
+        Returns:
+            np.ndarray: [description]
+        """
         first_2_second = self.get_laser_hom()
-        temp = self.T_lt2_to_tracker@diff_T@self.T_tracker_to_lt1
+        temp = self.T_lt2_to_tracker@first_2_second@self.T_tracker_to_lt1
+        temp[:3, 3] = temp[:3, 3]*scaling
         return temp
 
 
