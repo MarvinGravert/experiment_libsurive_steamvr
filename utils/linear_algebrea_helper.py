@@ -224,7 +224,7 @@ def reprojection_error_axis_depending(point_set_a: np.ndarray,
 def get_angle_from_rot_matrix(rot_matrix) -> float:
     # https://en.wikipedia.org/wiki/Rotation_matrix#Determining_the_angle
     temp = (np.trace(rot_matrix)-1)/2
-    return np.arccos(temp)
+    return np.rad2deg(np.arccos(temp))
 
 
 def build_coordinate_system_via_3_points(origin, x_axis_point, y_axis_point) -> np.ndarray:
@@ -267,10 +267,31 @@ def distance_between_hom_matrices(hom_matrix_b, hom_matrix_c) -> Tuple[float]:
         hom_matrix_c ([type]): [description]
 
     Returns:
-        Tuple[float]: distance, angle
+        Tuple[float]: distance, angle (in deg)
     """
     hom_matrixb2c = np.linalg.inv(hom_matrix_c)@hom_matrix_b
     R, t = separate_from_homogeneous_matrix(hom_matrixb2c)
-    angle = get_angle_from_rot_matrix(R)
+    angle = get_angle_from_rot_matrix(R)  # angle in deg
     dist = np.linalg.norm(t)  # if axis required dont norm and just return the vector
     return dist, angle
+
+
+def distance_between_rotation_matrices(
+    rot_matrix_b: np.ndarray,
+    rot_matrix_c: np.ndarray
+) -> float:
+    """calculates the distance between two rotations matrices which are related 
+    by a common system. Returns distance as the angle necessary to rotate into one another
+    first: B->A
+    second: C->A
+    results in B->C which is  
+
+    Args:
+        rot_matrix_b (np.ndarray): [description]
+        rot_matrix_c (np.ndarray): [description]
+
+    Returns:
+        float: [description]
+    """
+    diff_rot = np.linalg.inv(rot_matrix_b)@rot_matrix_c
+    return get_angle_from_rot_matrix(diff_rot)
