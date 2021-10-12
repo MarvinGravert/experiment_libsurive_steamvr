@@ -49,7 +49,5 @@ def save_data(
 
 def load_data(
         file_location: Path,
-        exp_type: str,
-        framework: Framework,
 ) -> np.ndarray:
     return np.genfromtxt(file_location, delimiter=" ", skip_header=1)
