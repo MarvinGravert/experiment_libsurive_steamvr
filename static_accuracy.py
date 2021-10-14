@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from utils.general import Framework, get_file_location, save_data
-
+from GS_timing import delay
 if os.name == 'nt':  # if windows
     import openvr
     import utils.triad_openvr as triad_openvr
@@ -36,7 +36,7 @@ def run_static_accuracy_steamvr(
     max_counter = duration*frequency
     pose_matrix = np.zeros((int(max_counter), 14))
     print("START Measuring")
-    time.sleep(1)
+    # time.sleep(1)
     pose_list = list()
     while counter < max_counter:
         current_time = time.perf_counter()
@@ -46,7 +46,7 @@ def run_static_accuracy_steamvr(
         counter += 1
         try:
             time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            time.sleep(time_2_sleep)
+            delay(time_2_sleep*1000)
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
     for j, pose in enumerate(pose_list):
@@ -117,8 +117,8 @@ if __name__ == "__main__":
     exp_type = "static_accuracy"
     # settings:
     settings = {
-        "frequency": 100,  # Hz
-        "duration": 1  # seconds
+        "frequency": 150,  # Hz
+        "duration": 2  # seconds
     }
     framework = Framework("steamvr")
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     CREATE NEW FILE LOCATION
     increase point number until file doesnt yet exist
     """
-    num_point = 0
+    num_point = 1
     file_location: Path = get_file_location(
         exp_type=exp_type,
         exp_num=exp_num,
@@ -153,8 +153,7 @@ if __name__ == "__main__":
     elif framework == Framework.steamvr:
         pose_matrix = run_static_accuracy_steamvr(
             frequency=settings["frequency"],
-            duration=settings["duration"],
-            num_point=num_point
+            duration=settings["duration"]
         )
     else:
         print("framework not recognized")
@@ -171,3 +170,7 @@ if __name__ == "__main__":
         settings=settings,
         framework=framework
     )
+    if num_point > 2:
+        num_point += 1  # adjusting because i deleted P3 in the .src and getting confused^^
+    print(f"Run for point {num_point}")
+    print("Finished")
