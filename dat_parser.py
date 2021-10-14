@@ -8,7 +8,7 @@ file_loc = Path("./MarStaticAcc.dat")
 with file_loc.open("r") as file:
     t = file.read().replace('\n', '')
 
-pattern = 'XP[0-9]*=\{[^S]*'
+pattern = '=\{X[^S]*'
 result = re.findall(pattern, t)
 """ 
 list of the point coordinates. 
@@ -28,6 +28,8 @@ for test in result:
     waypoint_list.append(coor)
 
 waypoint_matrix = np.array(waypoint_list)
+
+print(waypoint_list)
 
 
 def plot_robo_calibration_points(rob_points):
