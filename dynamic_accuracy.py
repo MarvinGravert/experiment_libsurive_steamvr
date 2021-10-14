@@ -77,10 +77,11 @@ def run_dynamic_accuarcy_steamvr(
     while not check_if_moved(
         current_pose=v.devices["tracker_1"].get_pose_quaternion(),
         initial_pose=inital_pose,
-        moving_threshold=0.1
+        moving_threshold=0.02
     ):
-        time.sleep(0.2)
+        time.sleep(0.1)
     print("START Measuring")
+    starttime = time.perf_counter()
     pose_list = list()
     try:
         while True:
@@ -95,8 +96,9 @@ def run_dynamic_accuarcy_steamvr(
             except ValueError:  # happends if negative sleep duration (loop took too long)
                 pass
     except KeyboardInterrupt:
+        endtime = time.perf_counter()
         print(
-            f"Stopped measuring. After {counter} meausrements or roughly {counter/frequency} seconds")
+            f"Stopped measuring. After {counter} meausrements in roughly {endtime-starttime} seconds")
     pose_matrix = np.zeros((int(counter), 14))
     for j, pose in enumerate(pose_list):
         pose_matrix[j, :] = np.array(pose[0]+pose[1])
@@ -127,7 +129,6 @@ def run_dynamic_accuarcy_libsurvive(
             break
     counter = 0
     print("START Measuring")
-    time.sleep(1)
     tracker_obj_1 = obj_dict[b'T20']
     tracker_obj_2 = obj_dict[b'T21']
     initial_pose = get_pose_libsurvive_obj(tracker_obj_1.Pose())
@@ -162,7 +163,8 @@ if __name__ == "__main__":
     exp_type = "dynamic_accuracy"
     # settings:
     settings = {
-        "frequency": 100,  # Hz
+        "frequency": 150,  # Hz
+        "velocity": "200 mm/s"
     }
     framework = Framework("steamvr")
 
@@ -170,7 +172,7 @@ if __name__ == "__main__":
     CREATE NEW FILE LOCATION
     increase point number until file doesnt yet exist
     """
-    num_point = 0
+    num_point = 1
     file_location: Path = get_file_location(
         exp_type=exp_type,
         exp_num=exp_num,
@@ -191,13 +193,10 @@ if __name__ == "__main__":
     if framework == Framework.libsurvive:
         pose_matrix = run_dynamic_accuarcy_libsurvive(
             frequency=settings["frequency"],
-            duration=settings["duration"]
         )
     elif framework == Framework.steamvr:
         pose_matrix = run_dynamic_accuarcy_steamvr(
             frequency=settings["frequency"],
-            duration=settings["duration"],
-            num_point=num_point
         )
     else:
         print("framework not recognized")
