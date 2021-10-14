@@ -11,6 +11,8 @@ from utils.linear_algebrea_helper import (
     distance_between_hom_matrices,
     transform_to_homogenous_matrix
 )
+from GS_timing import delay
+
 if os.name == 'nt':  # if windows
     import openvr
     import utils.triad_openvr as triad_openvr
@@ -23,7 +25,7 @@ def check_if_moved(
     initial_pose: np.ndarray,
     moving_threshold: float = 0.1
 ) -> bool:
-    """check if the object has moved from its initial pose 
+    """check if the object has moved from its initial pose
 
     Args:
         pose (np.ndarray): current pose
@@ -82,26 +84,44 @@ def run_dynamic_accuarcy_steamvr(
         time.sleep(0.1)
     print("START Measuring")
     starttime = time.perf_counter()
-    pose_list = list()
+    first_tracker_list = list()
+    second_tracker_list = list()
+    interval = 1/frequency
     try:
         while True:
             current_time = time.perf_counter()
-            pose_tracker_1 = v.devices["tracker_1"].get_pose_quaternion()
-            pose_tracker_2 = v.devices["tracker_2"].get_pose_quaternion()
-            counter += 1  # counter before adding because it may otherwise cause a matrix limit expection later on in case of interrupt
-            pose_list.append([pose_tracker_1, pose_tracker_2])
             try:
-                time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-                time.sleep(time_2_sleep)
+                first_tracker_list.append(v.devices["tracker_1"].get_pose_quaternion())
+            except ZeroDivisionError:  # happends if tracking is lost
+                continue
+            try:
+                second_tracker_list.append(v.devices["tracker_2"].get_pose_quaternion())
+            except ZeroDivisionError:
+                del first_tracker_list[-1]
+            counter += 1  # counter before adding because it may otherwise cause a matrix limit expection later on in case of interrupt
+            time_2_sleep = interval-(time.perf_counter()-current_time)
+            try:
+                delay(time_2_sleep*1000)
             except ValueError:  # happends if negative sleep duration (loop took too long)
                 pass
     except KeyboardInterrupt:
         endtime = time.perf_counter()
+        duration = endtime-starttime
+        actual_frequency = counter/duration
         print(
-            f"Stopped measuring. After {counter} meausrements in roughly {endtime-starttime} seconds")
-    pose_matrix = np.zeros((int(counter), 14))
-    for j, pose in enumerate(pose_list):
-        pose_matrix[j, :] = np.array(pose[0]+pose[1])
+            f"Stopped measuring. After {counter} meausrements in roughly {duration} seconds. Resulting in a frequency of {actual_frequency}")
+    settings["duration"] = duration
+    settings["measurements"] = counter
+    settings["actual frequency"] = actual_frequency
+
+    first_pose_matrix = np.array(first_tracker_list)
+    second_pose_matrix = np.array(second_tracker_list)
+    if len(first_pose_matrix) != len(second_pose_matrix):
+        # happends if untimely interrupt thus we cut the last entry in for the first
+        first_pose_matrix = first_pose_matrix[:-1, :]
+    print(first_pose_matrix.shape)
+    print(second_pose_matrix.shape)
+    pose_matrix = np.hstack((first_pose_matrix, second_pose_matrix))
     return pose_matrix
 
 
@@ -159,12 +179,12 @@ def run_dynamic_accuarcy_libsurvive(
 
 
 if __name__ == "__main__":
-    exp_num = 1
+    exp_num = 4
     exp_type = "dynamic_accuracy"
     # settings:
     settings = {
         "frequency": 150,  # Hz
-        "velocity": "200 mm/s"
+        "velocity": "100 mm/s",
     }
     framework = Framework("steamvr")
 
