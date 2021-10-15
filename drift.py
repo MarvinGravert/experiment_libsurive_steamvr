@@ -7,14 +7,15 @@ from enum import Enum
 import numpy as np
 import matplotlib.pyplot as plt
 
-from better_libsurvive_api import (
-    BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
-)
+
 if os.name == 'nt':
     import openvr
     import utils.triad_openvr as triad_openvr
 else:
     import pysurvive
+    from better_libsurvive_api import (
+        BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
+    )
 
 from utils.general import Framework, save_data, get_file_location, check_if_moved
 from GS_timing import delay
@@ -44,7 +45,7 @@ def run_drift_steamvr(frequency: int = 10, duration: float = 10*60) -> np.ndarra
         counter += 1
         try:
             time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            delay(time_2_sleep)
+            delay(time_2_sleep*1000)
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
     pose_matrix = np.array(pose_list)
@@ -113,7 +114,7 @@ if __name__ == "__main__":
         "duration": 60*10,  # seconds
         "sys.args": sys.argv
     }
-    framework = Framework("libsurvive")
+    framework = Framework("steamvr")
 
     num_point = 1
     file_location: Path = get_file_location(

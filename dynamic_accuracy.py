@@ -6,9 +6,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-from better_libsurvive_api import (
-    BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
-)
+
 from utils.general import Framework, get_file_location, save_data, check_if_moved
 from utils.linear_algebrea_helper import (
     distance_between_hom_matrices,
@@ -21,6 +19,9 @@ if os.name == 'nt':  # if windows
     import utils.triad_openvr as triad_openvr
 else:
     import pysurvive
+    from better_libsurvive_api import (
+        BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
+    )
 
 
 def run_dynamic_accuarcy_steamvr(
@@ -173,15 +174,15 @@ def run_dynamic_accuarcy_libsurvive(
 
 
 if __name__ == "__main__":
-    exp_num = 4
+    exp_num = 1
     exp_type = "dynamic_accuracy"
     # settings:
     settings = {
         "frequency": 150,  # Hz
-        "velocity": "1000 mm/s",
+        "velocity": "300 mm/s",
         "sys.args": sys.argv
     }
-    framework = Framework("libsurvive")
+    framework = Framework("steamvr")
 
     """
     CREATE NEW FILE LOCATION

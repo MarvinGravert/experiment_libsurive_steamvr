@@ -5,9 +5,7 @@ from pathlib import Path
 
 from utils.general import Framework, get_file_location, save_data, check_if_moved
 import numpy as np
-from better_libsurvive_api import (
-    BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
-)
+
 from GS_timing import delay
 
 if os.name == 'nt':  # if windows
@@ -15,6 +13,9 @@ if os.name == 'nt':  # if windows
     import utils.triad_openvr as triad_openvr
 else:
     import pysurvive
+    from better_libsurvive_api import (
+        BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
+    )
 
 
 def run_libsurvive_repeatability(
@@ -92,7 +93,7 @@ def run_repeatability_steamvr(
         counter += 1
         try:
             time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            delay(time_2_sleep)
+            delay(time_2_sleep*1000)
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
     pose_matrix = np.array(pose_list)
@@ -108,7 +109,7 @@ if __name__ == "__main__":
         "duration": 2,  # seconds
         "sys.args": sys.argv
     }
-    framework = Framework("libsurvive")
+    framework = Framework("steamvr")
 
     """
     CREATE NEW FILE LOCATION

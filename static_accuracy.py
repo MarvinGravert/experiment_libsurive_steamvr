@@ -6,9 +6,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-from better_libsurvive_api import (
-    BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
-)
+
 from utils.general import Framework, get_file_location, save_data, check_if_moved
 from GS_timing import delay
 if os.name == 'nt':  # if windows
@@ -16,6 +14,9 @@ if os.name == 'nt':  # if windows
     import utils.triad_openvr as triad_openvr
 else:
     import pysurvive
+    from better_libsurvive_api import (
+        BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
+    )
 
 
 def run_static_accuracy_steamvr(
