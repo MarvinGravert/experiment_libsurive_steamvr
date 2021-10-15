@@ -103,7 +103,7 @@ def run_dynamic_accuarcy_libsurvive(
         actx=actx,
         num=4
     )
-    time.sleep(3)
+    time.sleep(1)
     tracker_obj_1 = survive_objects["red"]
     tracker_obj_2 = survive_objects["black"]
     # run stabilizer
@@ -173,12 +173,13 @@ def run_dynamic_accuarcy_libsurvive(
 
 
 if __name__ == "__main__":
-    exp_num = 1
+    exp_num = 4
     exp_type = "dynamic_accuracy"
     # settings:
     settings = {
         "frequency": 150,  # Hz
-        "velocity": "100 mm/s",
+        "velocity": "1000 mm/s",
+        "sys.args": sys.argv
     }
     framework = Framework("libsurvive")
 

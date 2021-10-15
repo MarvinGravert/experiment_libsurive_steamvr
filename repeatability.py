@@ -28,6 +28,7 @@ def run_libsurvive_repeatability(
         actx=actx,
         num=3
     )
+
     tracker_obj_1 = survive_objects["red"]
     # run stabilizer
     last_pose = tracker_obj_1.get_pose_quaternion()
@@ -99,12 +100,13 @@ def run_repeatability_steamvr(
 
 
 if __name__ == "__main__":
-    point_number = 1  # 1-10
+    point_number = 10  # 1-10
     exp_type = "repeatability"
     # settings:
     settings = {
         "frequency": 150,  # Hz
-        "duration": 2  # seconds
+        "duration": 2,  # seconds
+        "sys.args": sys.argv
     }
     framework = Framework("libsurvive")
 
@@ -140,7 +142,6 @@ if __name__ == "__main__":
         pose_matrix = run_repeatability_steamvr(
             frequency=settings["frequency"],
             duration=settings["duration"],
-            num_point=num_point
         )
     else:
         print("framework not recognized")

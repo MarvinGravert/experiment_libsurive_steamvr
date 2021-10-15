@@ -110,7 +110,8 @@ if __name__ == "__main__":
     # settings:
     settings = {
         "frequency": 10,  # Hz
-        "duration": 60*20  # seconds
+        "duration": 60*10,  # seconds
+        "sys.args": sys.argv
     }
     framework = Framework("libsurvive")
 
