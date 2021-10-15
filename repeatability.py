@@ -3,8 +3,12 @@ import sys
 import time
 from pathlib import Path
 
-from utils.general import Framework, get_file_location, save_data
+from utils.general import Framework, get_file_location, save_data, check_if_moved
 import numpy as np
+from better_libsurvive_api import (
+    BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
+)
+from GS_timing import delay
 
 if os.name == 'nt':  # if windows
     import openvr
@@ -18,40 +22,46 @@ def run_libsurvive_repeatability(
     duration: float
 ) -> np.ndarray:
 
-    actx = pysurvive.SimpleContext(sys.argv)
-    time.sleep(5)
+    actx = get_simple_context(sys.argv)
+    simple_start(actx)
+    survive_objects = get_n_survive_objects(
+        actx=actx,
+        num=3
+    )
+    tracker_obj_1 = survive_objects["red"]
+    # run stabilizer
+    last_pose = tracker_obj_1.get_pose_quaternion()
+    stable_counter = 0
+    time.sleep(0.05)
+    print("Waiting for stability")
+    while stable_counter < 10:
+        current_pose = tracker_obj_1.get_pose_quaternion()
+        if not check_if_moved(
+            initial_pose=last_pose,
+            current_pose=current_pose,
+            moving_threshold=0.001
+        ):
+            stable_counter += 1
 
-    obj_dict = dict()
-    while actx.Running():
-        updated = actx.NextUpdated()
-        if updated is not None:
-            if updated.Name() not in obj_dict:
-                obj_dict[updated.Name()] = updated
-                print(f"objects: ", updated.Name())
-        if len(obj_dict.keys()) == 3:
-            break
+        last_pose = current_pose
+        time.sleep(0.1)
+    print("Stable")
+    first_tracker_list = list()
     counter = 0
     max_counter = duration*frequency
-    pose_matrix = np.zeros((int(max_counter), 7))
     print("START Measuring")
-    time.sleep(1)
-    tracker_obj = obj_dict[b'T20']
-    pose_list = list()
-    while actx.Running() and counter < max_counter:
+
+    while counter < max_counter:
         current_time = time.perf_counter()
-        pose, _ = tracker_obj.Pose()
-        pose_list.append(pose)
+        first_tracker_list.append(tracker_obj_1.get_pose_quaternion())
+        counter += 1
         try:
             time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            time.sleep(time_2_sleep)
+            delay(time_2_sleep*1000)
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
-        counter += 1
-    for j, pose in enumerate(pose_list):
-        pos = np.array([i for i in pose.Pos])
-        rot = np.array([i for i in pose.Rot])
-        pose_matrix[j, :] = np.hstack((pos, rot))
-    return pose_matrix
+    first_pose_matrix = np.array(first_tracker_list)
+    return first_pose_matrix
 
 
 def run_repeatability_steamvr(
@@ -71,7 +81,6 @@ def run_repeatability_steamvr(
     v.print_discovered_objects()
     counter = 0
     max_counter = duration*frequency
-    pose_matrix = np.zeros((int(max_counter), 7))
     print("START Measuring")
     time.sleep(1)
     pose_list = list()
@@ -79,32 +88,31 @@ def run_repeatability_steamvr(
         current_time = time.perf_counter()
         pose = v.devices["tracker_1"].get_pose_quaternion()
         pose_list.append(pose)
+        counter += 1
         try:
             time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            time.sleep(time_2_sleep)
+            delay(time_2_sleep)
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
-        counter += 1
-    for j, pose in enumerate(pose_list):
-        pose_matrix[j, :] = np.array(pose)
+    pose_matrix = np.array(pose_list)
     return pose_matrix
 
 
 if __name__ == "__main__":
     point_number = 1  # 1-10
-    exp_type = "static_accuracy"
+    exp_type = "repeatability"
     # settings:
     settings = {
-        "frequency": 100,  # Hz
-        "duration": 1  # seconds
+        "frequency": 150,  # Hz
+        "duration": 2  # seconds
     }
-    framework = Framework("steamvr")
+    framework = Framework("libsurvive")
 
     """
     CREATE NEW FILE LOCATION
     increase point number until file doesnt yet exist
     """
-    num_point = 0
+    num_point = 1
     file_location: Path = get_file_location(
         exp_type=exp_type,
         exp_num=point_number,
@@ -129,7 +137,7 @@ if __name__ == "__main__":
             duration=settings["duration"]
         )
     elif framework == Framework.steamvr:
-        pose_matrix = run_static_accuracy_steamvr(
+        pose_matrix = run_repeatability_steamvr(
             frequency=settings["frequency"],
             duration=settings["duration"],
             num_point=num_point

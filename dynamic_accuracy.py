@@ -6,7 +6,10 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils.general import Framework, get_file_location, save_data
+from better_libsurvive_api import (
+    BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
+)
+from utils.general import Framework, get_file_location, save_data, check_if_moved
 from utils.linear_algebrea_helper import (
     distance_between_hom_matrices,
     transform_to_homogenous_matrix
@@ -18,40 +21,6 @@ if os.name == 'nt':  # if windows
     import utils.triad_openvr as triad_openvr
 else:
     import pysurvive
-
-
-def check_if_moved(
-    current_pose: np.ndarray,
-    initial_pose: np.ndarray,
-    moving_threshold: float = 0.1
-) -> bool:
-    """check if the object has moved from its initial pose
-
-    Args:
-        pose (np.ndarray): current pose
-        initial_pose (np.ndarray): initial pose
-        moving_threshold (float, optional): distance in m considered moved. Defaults to 0.1.
-
-    Returns:
-        bool: [description]
-    """
-    pos, rot = current_pose[:3], current_pose[3:]
-    ini_pos, ini_rot = initial_pose[:3], initial_pose[3:]
-    current_T = transform_to_homogenous_matrix(
-        position=pos,
-        quaternion=rot,
-        scalar_first=True
-    )
-    init_T = transform_to_homogenous_matrix(
-        position=ini_pos,
-        quaternion=ini_rot,
-        scalar_first=True
-    )
-    diff_pos, _ = distance_between_hom_matrices(current_T, init_T)
-    if diff_pos > moving_threshold:
-        return True
-    else:
-        return False
 
 
 def run_dynamic_accuarcy_steamvr(
@@ -125,68 +94,93 @@ def run_dynamic_accuarcy_steamvr(
     return pose_matrix
 
 
-def get_pose_libsurvive_obj(pose_obj) -> np.ndarray:
-    pos = np.array([i for i in pose_obj.Pos])  # try np.array(x,dtype=float)
-    rot = np.array([i for i in pose_obj.Rot])
-    return np.hstack((pos, rot))
-
-
 def run_dynamic_accuarcy_libsurvive(
     frequency: int,
-    duration: float,
 ) -> np.ndarray:
-    actx = pysurvive.SimpleContext(sys.argv)
-    time.sleep(5)
-    # collect all objects
-    obj_dict = dict()
-    while actx.Running():
-        updated = actx.NextUpdated()
-        if updated is not None:
-            if updated.Name() not in obj_dict:
-                obj_dict[updated.Name()] = updated
-                print(f"objects: ", updated.Name())
-        if len(obj_dict.keys()) == 4:
-            break
-    counter = 0
-    print("START Measuring")
-    tracker_obj_1 = obj_dict[b'T20']
-    tracker_obj_2 = obj_dict[b'T21']
-    initial_pose = get_pose_libsurvive_obj(tracker_obj_1.Pose())
-    while check_if_moved(
-        initial_pose=initial_pose,
-        current_pose=get_pose_libsurvive_obj(pose_obj=tracker_obj_1.Pose()),
-        moving_threshold=0.1
-    ):
+    actx = get_simple_context(sys.argv)
+    simple_start(actx)
+    survive_objects = get_n_survive_objects(
+        actx=actx,
+        num=4
+    )
+    time.sleep(3)
+    tracker_obj_1 = survive_objects["red"]
+    tracker_obj_2 = survive_objects["black"]
+    # run stabilizer
+    last_pose = tracker_obj_2.get_pose_quaternion()
+    stable_counter = 0
+    time.sleep(0.05)
+    print("Waiting for stability")
+    while stable_counter < 10:
+        current_pose = tracker_obj_2.get_pose_quaternion()
+        if not check_if_moved(
+            initial_pose=last_pose,
+            current_pose=current_pose,
+            moving_threshold=0.001
+        ):
+            stable_counter += 1
+
+        last_pose = current_pose
         time.sleep(0.1)
-    pose_list = list()
-    while actx.Running():
+    print("Stable")
+    first_tracker_list = list()
+    second_tracker_list = list()
+    counter = 0
+    interval = 1/frequency
+    initial_pose = tracker_obj_2.get_pose_quaternion()
+    while not check_if_moved(
+        initial_pose=initial_pose,
+        current_pose=tracker_obj_2.get_pose_quaternion(),
+        moving_threshold=0.02
+    ):
+        time.sleep(0.01)
+    print("START Measuring")
+    starttime = time.perf_counter()
+    while True:
         current_time = time.perf_counter()
-        pose_1, _ = tracker_obj_1.Pose()
-        pose_2, _ = tracker_obj_2.Pose()
+
+        first_tracker_list.append(tracker_obj_1.get_pose_quaternion())
+        second_tracker_list.append(tracker_obj_2.get_pose_quaternion())
         counter += 1
-        pose_list.append([pose_1, pose_2])
         try:
-            time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            time.sleep(time_2_sleep)
+            time_2_sleep = interval-(time.perf_counter()-current_time)
+            delay(time_2_sleep*1000)
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
-    pose_matrix = np.zeros((int(counter), 7))
-    for j, (pose_1, pose_2) in enumerate(pose_list):
-        pose_1 = get_pose_libsurvive_obj(pose_1)
-        pose_2 = get_pose_libsurvive_obj(pose_2)
-        pose_matrix[j, :] = np.hstack((pose_1, pose_2))
+        except KeyboardInterrupt:
+            endtime = time.perf_counter()
+            duration = endtime-starttime
+            actual_frequency = counter/duration
+            print(
+                f"Stopped measuring. After {counter} meausrements in roughly {duration} seconds. Resulting in a frequency of {actual_frequency}")
+            break
+
+    settings["duration"] = duration
+    settings["measurements"] = counter
+    settings["actual frequency"] = actual_frequency
+
+    first_pose_matrix = np.array(first_tracker_list)
+    second_pose_matrix = np.array(second_tracker_list)
+
+    if len(first_pose_matrix) != len(second_pose_matrix):
+        # happends if untimely interrupt thus we cut the last entry in for the first
+        first_pose_matrix = first_pose_matrix[:-1, :]
+
+    print(first_pose_matrix.shape)
+    print(second_pose_matrix.shape)
+    pose_matrix = np.hstack((first_pose_matrix, second_pose_matrix))
     return pose_matrix
 
 
 if __name__ == "__main__":
-    exp_num = 4
+    exp_num = 1
     exp_type = "dynamic_accuracy"
     # settings:
     settings = {
         "frequency": 150,  # Hz
         "velocity": "100 mm/s",
     }
-    framework = Framework("steamvr")
+    framework = Framework("libsurvive")
 
     """
     CREATE NEW FILE LOCATION

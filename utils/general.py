@@ -51,3 +51,27 @@ def load_data(
         file_location: Path,
 ) -> np.ndarray:
     return np.genfromtxt(file_location, delimiter=" ", skip_header=1)
+
+
+def check_if_moved(
+    current_pose: np.ndarray,
+    initial_pose: np.ndarray,
+    moving_threshold: float = 0.1
+) -> bool:
+    """check if the object has moved from its initial pose
+
+    Args:
+        pose (np.ndarray): current pose
+        initial_pose (np.ndarray): initial pose
+        moving_threshold (float, optional): distance in m considered moved. Defaults to 0.1.
+
+    Returns:
+        bool: [description]
+    """
+    pos, rot = current_pose[:3], current_pose[3:]
+    ini_pos, ini_rot = initial_pose[:3], initial_pose[3:]
+    diff_pos = np.linalg.norm(pos-ini_pos)
+    if diff_pos > moving_threshold:
+        return True
+    else:
+        return False
