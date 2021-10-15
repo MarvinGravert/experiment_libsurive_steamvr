@@ -89,6 +89,7 @@ def analyze_data(data_list):
     """
     if framework == Framework.libsurvive:
         expected_hom = TransformLibsurvive().get_tracker_2_tracker(scaling=0.001)
+        expected_hom = TransformSteamVR().get_tracker_2_tracker(scaling=0.001)
     elif framework == Framework.steamvr:
         expected_hom = TransformSteamVR().get_tracker_2_tracker(scaling=0.001)
 
@@ -176,8 +177,8 @@ def plot_cumultive(data: List[List[float]]):
 
 if __name__ == "__main__":
     exp_type = "dynamic_accuracy"
-    date = "20211013"
-    exp_num = 1
+    date = "20211014"
+    exp_num = 4
     framework = Framework("steamvr")
     data_list = list()
     """

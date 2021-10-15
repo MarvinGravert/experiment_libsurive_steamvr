@@ -35,7 +35,7 @@ def average_pose(pose_matrix: np.ndarray) -> np.ndarray:
 
 if __name__ == "__main__":
     exp_type = "static_accuracy"
-    date = "20211008"
+    date = "20211014"
     exp_num = 1
     framework = Framework("steamvr")
     data_list = list()
@@ -102,3 +102,7 @@ if __name__ == "__main__":
 
     pos_error_list = np.array(error_list)[:, 0]
     rot_error_list = np.array(error_list)[:, 1]
+    print(eval_error_list(rot_error_list))
+    t = eval_error_list(pos_error_list)
+    print(t)
+    print(pos_error_list)
