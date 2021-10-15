@@ -251,7 +251,18 @@ def build_coordinate_system_via_3_points(origin, x_axis_point, y_axis_point) -> 
     return combine_to_homogeneous_matrix(rotation_matrix=rot, translation_vector=origin)
 
 
-def distance_between_hom_matrices(hom_matrix_b, hom_matrix_c) -> Tuple[float]:
+def hook(a, b):
+    r1, t1 = separate_from_homogeneous_matrix(a)
+    r2, t2 = separate_from_homogeneous_matrix(b)
+    alpha1 = get_angle_from_rot_matrix(r1)
+    alpha2 = get_angle_from_rot_matrix(r2)
+    dist1 = np.linalg.norm(t1)
+    dist2 = np.linalg.norm(t2)
+    # TODO: theoretically we are not allowd to take absolute
+    return np.abs(dist1-dist2), np.abs(alpha1-alpha2)
+
+
+def distance_between_hom_matrices(actual_hom, ideal_hom) -> Tuple[float]:
     """calculates the distances between two coordiante systems which are related 
     by a common system. The homogenous transformatino matrix are handed over and
     the angle and distance are calculated (axis independent)
@@ -269,6 +280,7 @@ def distance_between_hom_matrices(hom_matrix_b, hom_matrix_c) -> Tuple[float]:
     Returns:
         Tuple[float]: distance, angle (in deg)
     """
+    return hook(actual_hom, ideal_hom)
     hom_matrixb2c = np.linalg.inv(hom_matrix_c)@hom_matrix_b
     R, t = separate_from_homogeneous_matrix(hom_matrixb2c)
     angle = get_angle_from_rot_matrix(R)  # angle in deg
