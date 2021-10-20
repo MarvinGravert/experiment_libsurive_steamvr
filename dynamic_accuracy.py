@@ -45,9 +45,9 @@ def run_dynamic_accuarcy_steamvr(
     WAIT FOR tracker to move before starting measuring
     """
     print("WAITING for tracker being moved")
-    inital_pose = v.devices["tracker_1"].get_pose_quaternion()
+    inital_pose = np.array(v.devices["tracker_1"].get_pose_quaternion())
     while not check_if_moved(
-        current_pose=v.devices["tracker_1"].get_pose_quaternion(),
+        current_pose=np.array(v.devices["tracker_1"].get_pose_quaternion()),
         initial_pose=inital_pose,
         moving_threshold=0.02
     ):
@@ -179,7 +179,7 @@ if __name__ == "__main__":
     # settings:
     settings = {
         "frequency": 150,  # Hz
-        "velocity": "300 mm/s",
+        "velocity": "1000 mm/s",
         "sys.args": sys.argv
     }
     framework = Framework("steamvr")
