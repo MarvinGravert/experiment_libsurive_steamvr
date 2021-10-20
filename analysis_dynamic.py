@@ -53,18 +53,18 @@ def analyze_data(data_list):
     Split and Average
     """
     for pose_data in data_list:
-        # first_tracker_list.append(pose_data[:, :7])
-        # second_tracker_list.append(pose_data[:, 7:])
+        first_tracker_list.append(pose_data[:, :7])
+        second_tracker_list.append(pose_data[:, 7:])
         # temp = resample_poly(pose_data[:, :7], 1500, len(pose_data))
         # first_tracker_list.append(temp)
         # temp = resample_poly(pose_data[:, 7:], 1500, len(pose_data))
         # second_tracker_list.append(temp)
 
-        temp = resample(pose_data[:, :7], 2500)
-        first_tracker_list.append(temp)
-        temp = resample(pose_data[:, 7:], 2500)
-        second_tracker_list.append(temp)
-    print(len(first_tracker_list[0]))
+    #     temp = resample(pose_data[:, :7], 2500)
+    #     first_tracker_list.append(temp)
+    #     temp = resample(pose_data[:, 7:], 2500)
+    #     second_tracker_list.append(temp)
+    # print(len(first_tracker_list[0]))
     """
     CUTTIGN DATA depending on a set dict (1->only first 19sec etc)
     """
@@ -115,12 +115,14 @@ def analyze_data(data_list):
             temp = distance_between_hom_matrices(actual_hom, expected_hom)
             error_list.append(temp)
 
-    pos_error_list = np.array(error_list)[:, 0]
+    pos_error_list = np.array(error_list)[:, 0]*1000
     rot_error_list = np.array(error_list)[:, 1]
     print(eval_error_list(pos_error_list))
-    print(eval_error_list(rot_error_list))
-    plot_cumultive([pos_error_list])
+    print(len(pos_error_list))
+    # print(eval_error_list(rot_error_list))
+    # plot_cumultive([pos_error_list])
     # plt.plot(first_tracker_list[3][:, :3])
+    plt.plot(pos_error_list)
     plt.show()
 
 
@@ -178,7 +180,7 @@ def plot_cumultive(data: List[List[float]]):
 if __name__ == "__main__":
     exp_type = "dynamic_accuracy"
     date = "20211014"
-    exp_num = 4
+    exp_num = 2
     framework = Framework("steamvr")
     data_list = list()
     """
@@ -189,7 +191,7 @@ if __name__ == "__main__":
     #     exp_num=exp_num,
     #     date=date,
     #     framework=framework,
-    #     num_point=4
+    #     num_point=3
     # )
     # data_list.append(load_data(file_location=file_loc))
     """
