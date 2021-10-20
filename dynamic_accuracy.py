@@ -112,7 +112,7 @@ def run_dynamic_accuarcy_libsurvive(
     stable_counter = 0
     time.sleep(0.05)
     print("Waiting for stability")
-    while stable_counter < 10:
+    while stable_counter < 50:
         current_pose = tracker_obj_2.get_pose_quaternion()
         if not check_if_moved(
             initial_pose=last_pose,
@@ -174,15 +174,15 @@ def run_dynamic_accuarcy_libsurvive(
 
 
 if __name__ == "__main__":
-    exp_num = 1
+    exp_num = 5
     exp_type = "dynamic_accuracy"
     # settings:
     settings = {
         "frequency": 150,  # Hz
-        "velocity": "300 mm/s",
+        "velocity": "200 mm/s",
         "sys.args": sys.argv
     }
-    framework = Framework("steamvr")
+    framework = Framework("libsurvive")
 
     """
     CREATE NEW FILE LOCATION
