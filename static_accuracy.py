@@ -85,7 +85,7 @@ def run_static_accuracy_libsurvive(
     stable_counter = 0
     time.sleep(0.05)
     print("Waiting for stability")
-    while stable_counter < 10:
+    while stable_counter < 50:
         current_pose = tracker_obj_2.get_pose_quaternion()
         if not check_if_moved(
             initial_pose=last_pose,
