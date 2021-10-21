@@ -1,3 +1,19 @@
+"""File to run the repeatability experiment for libsurvive and steamvr.
+
+Experiment: 
+10 position inside the robot workspace are chosen. The tracker is brought to each consecutively. A measurement is
+taken using this script. This is repeated 10 times. This procedure should result in 100 measurement files.
+
+Setup: 2 LHs and 1 Tracker mounted on a robot
+
+The duration and sampling frequency can be adjusted. I have chosen 2 seconds at 150Hz. Note: for libsurvive a waiting
+period to stabilize the pose measurements precedes the actual recording period.
+
+To remain consistent with how the data is stored, this script requires more manual input than the other scripts.
+The number of each point has to manually entered before measurement are taken to ensure the data is stored correctly.
+Moreover, the range of points considered for analysis have to be specified. In short this is not ideal and should 
+be amended.
+"""
 import os
 import sys
 import time
@@ -24,17 +40,18 @@ def run_libsurvive_repeatability(
 ) -> np.ndarray:
 
     actx = get_simple_context(sys.argv)
-    simple_start(actx)
+    simple_start(actx)  # start the thread running libsurvive
     survive_objects = get_n_survive_objects(
         actx=actx,
-        num=3
+        num=3  # LH+1 Tracker.
     )
 
     tracker_obj_1 = survive_objects["red"]
-    # run stabilizer
+    """
+    Stabilize the sensor fusion
+    """
     last_pose = tracker_obj_1.get_pose_quaternion()
     stable_counter = 0
-    time.sleep(0.05)
     print("Waiting for stability")
     while stable_counter < 10:
         current_pose = tracker_obj_1.get_pose_quaternion()
@@ -48,6 +65,9 @@ def run_libsurvive_repeatability(
         last_pose = current_pose
         time.sleep(0.1)
     print("Stable")
+    """
+    Stabilize the sensor fusion
+    """
     first_tracker_list = list()
     counter = 0
     max_counter = duration*frequency
@@ -59,7 +79,7 @@ def run_libsurvive_repeatability(
         counter += 1
         try:
             time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            delay(time_2_sleep*1000)
+            delay(time_2_sleep*1000)  # function wants mili seconds
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
     first_pose_matrix = np.array(first_tracker_list)
@@ -67,17 +87,17 @@ def run_libsurvive_repeatability(
 
 
 def run_repeatability_steamvr(
-    frequency: int = 10,
-    duration: float = 10*60
+    frequency: int,
+    duration: float
 ) -> np.ndarray:
-    """
-
+    """ Runs the SteamVR routine to gather pose data. Returns matrix Nx7 matrix
+    containing the poses in x y z w i j k
     Args:
-        frequency (int, optional): [description]. Defaults to 10.
-        duration (float, optional): [description]. Defaults to 10*60.
+        frequency (int, optional): 
+        duration (float, optional):
 
     Returns:
-        np.ndarray: duration*frequencyx7 pose_matrix
+        np.ndarray: matrix with dimension (duration*frequency) x 7
     """
     v = triad_openvr.triad_openvr()
     v.print_discovered_objects()
@@ -93,7 +113,7 @@ def run_repeatability_steamvr(
         counter += 1
         try:
             time_2_sleep = 1/frequency-(time.perf_counter()-current_time)
-            delay(time_2_sleep*1000)
+            delay(time_2_sleep*1000)  # function wants mili seconds
         except ValueError:  # happends if negative sleep duration (loop took too long)
             pass
     pose_matrix = np.array(pose_list)
@@ -101,7 +121,11 @@ def run_repeatability_steamvr(
 
 
 if __name__ == "__main__":
-    point_number = 10  # 1-10
+    """ 
+    SPECIFY EXPERIMENT SETTINGS HERE
+    """
+    # 1-10 #CHANGE to the point intended to be measured.
+    point_number = 10
     exp_type = "repeatability"
     # settings:
     settings = {
@@ -110,7 +134,6 @@ if __name__ == "__main__":
         "sys.args": sys.argv
     }
     framework = Framework("steamvr")
-
     """
     CREATE NEW FILE LOCATION
     increase point number until file doesnt yet exist
@@ -130,7 +153,6 @@ if __name__ == "__main__":
             framework=framework,
             num_point=num_point
         )
-    # run program
     """
     RUN PROGRAM
     """
