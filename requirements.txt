@@ -1,0 +1,6 @@
+numpy
+scipy
+matplotlib
+openvr
+more_itertools
+#pysurvive
