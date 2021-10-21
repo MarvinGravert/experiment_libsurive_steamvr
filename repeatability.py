@@ -6,14 +6,14 @@ from pathlib import Path
 from utils.general import Framework, get_file_location, save_data, check_if_moved
 import numpy as np
 
-from GS_timing import delay
+from utils.GS_timing import delay
 
 if os.name == 'nt':  # if windows
     import openvr
     import utils.triad_openvr as triad_openvr
 else:
     import pysurvive
-    from better_libsurvive_api import (
+    from utils.better_libsurvive_api import (
         BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
     )
 

@@ -13,12 +13,12 @@ if os.name == 'nt':
     import utils.triad_openvr as triad_openvr
 else:
     import pysurvive
-    from better_libsurvive_api import (
+    from utils.better_libsurvive_api import (
         BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
     )
 
 from utils.general import Framework, save_data, get_file_location, check_if_moved
-from GS_timing import delay
+from utils.GS_timing import delay
 
 
 def run_drift_steamvr(frequency: int = 10, duration: float = 10*60) -> np.ndarray:
