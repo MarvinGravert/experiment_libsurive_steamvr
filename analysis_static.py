@@ -9,14 +9,14 @@ from utils.linear_algebrea_helper import (
     transform_to_homogenous_matrix)
 from utils.averageQuaternions import averageQuaternions
 from utils.general import (
-    Framework, load_data, get_file_location
+    Framework, load_data, get_file_location, plot_cumultive
 )
 from laser_trans import TransformLibsurvive, TransformSteamVR
 
 
 def average_pose(pose_matrix: np.ndarray) -> np.ndarray:
     """average a pose consisting of translational and quaternion of the strucuture
-    x y z w i j k 
+    x y z w i j k
 
     applies standard averaging for the first 3 and quaternion averaging for the quatnernion
 
@@ -33,33 +33,13 @@ def average_pose(pose_matrix: np.ndarray) -> np.ndarray:
     return np.concatenate((pos_mean, rot_mean))
 
 
-if __name__ == "__main__":
-    exp_type = "static_accuracy"
-    date = "20211014"
-    exp_num = 1
-    framework = Framework("steamvr")
-    data_list = list()
-    try:
-        num_point = 1
-        while True:
-            file_loc = get_file_location(
-                exp_type=exp_type,
-                exp_num=exp_num,
-                date=date,
-                framework=framework,
-                num_point=num_point
-            )
-            data_list.append(load_data(file_location=file_loc))
-            num_point += 1
-    except OSError:
-        # end the loop if thee is no more data in the directory
-        pass
+def analyze_data(data_list):
     """
     we have data of both trackers to analyse we do the following:
     1. loop over data to get the measurement for each position
-    2. split into two and average each 
+    2. split into two and average each
     3. put back into list
-    4. calculate for each position the measured homogenous matrix 
+    4. calculate for each position the measured homogenous matrix
     5. compare to expected matrix
     6. Analyze the difference
     """
@@ -74,10 +54,8 @@ if __name__ == "__main__":
     """ 
     Calculate homgenous matrix and compare to expected
     """
-    if framework == Framework.libsurvive:
-        expected_hom = TransformLibsurvive().get_tracker_2_tracker(scaling=0.001)
-    elif framework == Framework.steamvr:
-        expected_hom = TransformSteamVR().get_tracker_2_tracker(scaling=0.001)
+
+    expected_hom = TransformLibsurvive().get_tracker_2_tracker(scaling=0.001)
 
     first_hom_list = list()
     second_hom_list = list()
@@ -100,9 +78,59 @@ if __name__ == "__main__":
         temp = distance_between_hom_matrices(actual_hom, expected_hom)
         error_list.append(temp)
 
-    pos_error_list = np.array(error_list)[:, 0]
+    pos_error_list = np.array(error_list)[:, 0]*1000
     rot_error_list = np.array(error_list)[:, 1]
-    print(eval_error_list(rot_error_list))
-    t = eval_error_list(pos_error_list)
-    print(t)
+    # print(eval_error_list(rot_error_list))
+    # t = eval_error_list(pos_error_list)
+    # print(t)
     print(pos_error_list)
+    return pos_error_list, rot_error_list
+
+
+if __name__ == "__main__":
+    exp_type = "static_accuracy"
+    date = "20211014"
+    exp_num = 6
+    framework = Framework("steamvr")
+    data_list = list()
+    try:
+        num_point = 1
+        while True:
+            file_loc = get_file_location(
+                exp_type=exp_type,
+                exp_num=exp_num,
+                date=date,
+                framework=framework,
+                num_point=num_point
+            )
+            data_list.append(load_data(file_location=file_loc))
+            num_point += 1
+    except OSError:
+        # end the loop if thee is no more data in the directory
+        pass
+
+    pos_steamvr_error, rot_steamvr_error = analyze_data(data_list)
+
+    exp_type = "static_accuracy"
+    date = "20211015"
+    exp_num = 6
+    framework = Framework("libsurvive")
+    data_list = list()
+    try:
+        num_point = 1
+        while True:
+            file_loc = get_file_location(
+                exp_type=exp_type,
+                exp_num=exp_num,
+                date=date,
+                framework=framework,
+                num_point=num_point
+            )
+            data_list.append(load_data(file_location=file_loc))
+            num_point += 1
+    except OSError:
+        # end the loop if thee is no more data in the directory
+        pass
+    pos_lib_error, rot_lib_error = analyze_data(data_list)
+
+    plot_cumultive([pos_lib_error, pos_steamvr_error])
