@@ -1,3 +1,30 @@
+"""Script to run the dynamic accuracy experiment for steamvr and libsurvive. 
+
+Experiment:
+Follows the guidelines set out by ASTM 3064:
+Define two paths in the x, y plane. One mainly along x the other along y.
+The bar is to traverse these path in 3 different rotation. In line with the path,
+vertically orthogonal to the path and horizontally orthogonal to the path. 
+In total this should result in 6 distinct sets of measurements. 
+(check the standard for a more detailed review)
+
+In this experiment one orientation (vertically orthogonal) was not considerd,
+as one tracker would not have only been visible to one LH. Hence, only
+4 set of measurements are taken.
+
+
+The bar is mounted on a robot who ensures repeatable path traversal.
+
+Setup: 
+2 LH, 2 Trackers mounted on a bar facing away from each other, the bar itself 
+is mounted on a robot.
+
+Note: The speed of the robot is varied. Furthermore, while the script waits
+for the robot to move before taken measurements, no such condition is
+implemented for when the robot finishes the path traversal. This has to be stopped
+manually using the Keyboardinterrupt (sigint).
+
+"""
 import os
 import sys
 import time
@@ -6,13 +33,12 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+from utils.GS_timing import delay
 from utils.general import Framework, get_file_location, save_data, check_if_moved
 from utils.linear_algebrea_helper import (
     distance_between_hom_matrices,
     transform_to_homogenous_matrix
 )
-from utils.GS_timing import delay
 
 if os.name == 'nt':  # if windows
     import openvr
@@ -27,16 +53,16 @@ else:
 def run_dynamic_accuarcy_steamvr(
     frequency: int,
 ) -> np.ndarray:
-    """runs the static accuracy for steamvr. Collects data from both tracker
+    """runs the dynamic accuracy for steamvr. Collects data from both tracker
     and writes them into a matrix
     x y z w i j k x y z w i j k
 
     Args:
-        frequency (int, optional): [description]. Defaults to 50.
-        duration (float, optional): [description]. Defaults to 10.
+        frequency (int):
+        duration (float):
 
     Returns:
-        np.ndarray: [description]
+        np.ndarray: Nx14 Matrix
     """
     v = triad_openvr.triad_openvr()
     v.print_discovered_objects()
@@ -124,6 +150,7 @@ def run_dynamic_accuarcy_libsurvive(
         last_pose = current_pose
         time.sleep(0.1)
     print("Stable")
+    print("WAITING for tracker being moved")
     first_tracker_list = list()
     second_tracker_list = list()
     counter = 0
