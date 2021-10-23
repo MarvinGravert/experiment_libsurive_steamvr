@@ -1,4 +1,5 @@
 from typing import Tuple, Union, List
+from matplotlib.pyplot import sca
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 
@@ -294,3 +295,75 @@ def distance_between_rotation_matrices(
     """
     diff_rot = np.linalg.inv(rot_matrix_b)@rot_matrix_c
     return get_angle_from_rot_matrix(diff_rot)
+
+
+def quaternion_angle_rotation(
+    quat: Union[np.ndarray, List[float]],
+    scalar_first=False
+) -> float:
+    """calculatest the angle of rotation of a quaternion in DEGREE
+    standard format i j k w 
+    if scalar_true is set=> format is w i j k
+    Args:
+        quat (Union[np.ndarray,List[float]]): quat 
+        scalar_first (bool): changes expected format to w i j k 
+    Returns:
+        float: angle of rotation in DEGREE
+    """
+    if scalar_first:
+        w, i, j, k = quat
+    else:
+        i, j, k, w = quat
+    temp = np.linalg.norm([i, j, k])
+    return np.rad2deg(2*np.arcsin(temp))
+
+
+def rotational_distance_quaternion(
+    quat_a: Union[np.ndarray, List[float]],
+    quat_b: Union[np.ndarray, List[float]],
+    scalar_first=False
+) -> float:
+    """calculates the rotational distance between two quaternion in DEGREE!
+
+    Args:
+        quat_a (np.ndarray):  i j k w 
+        quat_b (np.ndarray):  i j k w 
+        scalar_first (bool, optional): changes format to w i j k. Defaults to False.
+
+    Returns:
+        float: angle in DEGREE
+    """
+    angle_a = quaternion_angle_rotation(quat=quat_a, scalar_first=scalar_first)
+    angle_b = quaternion_angle_rotation(quat=quat_b, scalar_first=scalar_first)
+    return np.abs(angle_a-angle_b)
+
+
+def quaternion_to_rot_matrix(
+    quat: Union[np.ndarray, List[float]],
+    scalar_first=False
+) -> np.ndarray:
+    """transforms a quaternion into the equivalent 3x3 rotation matrix
+
+    Args:
+        quat (Union[np.ndarray, List[float]]): i j k w quaternion
+        scalar_first (bool, optional): sets the expected quat to w i j k. Defaults to False.
+
+    Returns:
+        np.ndarray: 3x3 rotation matrix
+    """
+    if scalar_first:
+        w, i, j, k = quat
+    else:
+        i, j, k, w = quat
+
+    rot = R.from_quat([i, j, k, w])
+    return rot.as_matrix()
+
+
+if __name__ == "__main__":
+    q = [-2.795781125711595538e-01, -8.938646679072810297e-01, -3.411339826111457474e-01,
+         8.043407453320410017e-02]
+    t = quaternion_angle_rotation(q, scalar_first=True)
+    test_rot = quaternion_to_rot_matrix(q, scalar_first=True)
+    print(t)
+    print(get_angle_from_rot_matrix(test_rot))
