@@ -19,10 +19,14 @@ import sys
 import time
 from pathlib import Path
 
-from utils.general import Framework, get_file_location, save_data, check_if_moved
 import numpy as np
 
 from utils.GS_timing import delay
+from utils.general import Framework, get_file_location, save_data, check_if_moved
+from utils.consts import (
+    REPEATABILITY_DURATION, REPEATABILITY_FREQUENCY, LIBSURVIVE_STABILITY_COUNTER,
+    LIBSURVIVE_STABILITY_THRESHOLD
+)
 
 if os.name == 'nt':  # if windows
     import openvr
@@ -53,12 +57,12 @@ def run_libsurvive_repeatability(
     last_pose = tracker_obj_1.get_pose_quaternion()
     stable_counter = 0
     print("Waiting for stability")
-    while stable_counter < 10:
+    while stable_counter < LIBSURVIVE_STABILITY_COUNTER:
         current_pose = tracker_obj_1.get_pose_quaternion()
         if not check_if_moved(
             initial_pose=last_pose,
             current_pose=current_pose,
-            moving_threshold=0.001
+            moving_threshold=LIBSURVIVE_STABILITY_THRESHOLD
         ):
             stable_counter += 1
 
@@ -129,8 +133,8 @@ if __name__ == "__main__":
     exp_type = "repeatability"
     # settings:
     settings = {
-        "frequency": 150,  # Hz
-        "duration": 2,  # seconds
+        "frequency": REPEATABILITY_FREQUENCY,  # Hz
+        "duration": REPEATABILITY_DURATION,  # seconds
         "sys.args": sys.argv
     }
     framework = Framework("steamvr")

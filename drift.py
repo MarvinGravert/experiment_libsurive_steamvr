@@ -1,12 +1,24 @@
+"""Runs script for the drift experiment.
+
+Experiment
+Measure the pose of the tracker for xx amount of time with a defined frequency
+
+
+Setup: 
+2 LHs with 1 Tracker mounted on a robot
+"""
 import os
 import sys
 import time
 from pathlib import Path
-from enum import Enum
 
 import numpy as np
-import matplotlib.pyplot as plt
 
+from utils.general import Framework, save_data, get_file_location, check_if_moved
+from utils.GS_timing import delay
+from utils.consts import (
+    DRIFT_DURATION, DRIFT_FREQUENCY, LIBSURVIVE_STABILITY_COUNTER, LIBSURVIVE_STABILITY_THRESHOLD
+)
 
 if os.name == 'nt':
     import openvr
@@ -17,19 +29,18 @@ else:
         BetterSurviveObject, get_n_survive_objects, get_simple_context, simple_start
     )
 
-from utils.general import Framework, save_data, get_file_location, check_if_moved
-from utils.GS_timing import delay
 
-
-def run_drift_steamvr(frequency: int = 10, duration: float = 10*60) -> np.ndarray:
+def run_drift_steamvr(
+    frequency: int,
+    duration: float
+) -> np.ndarray:
     """
-
     Args:
-        frequency (int, optional): [description]. Defaults to 10.
-        duration (float, optional): [description]. Defaults to 10*60.
+        frequency (int): 
+        duration (float): 
 
     Returns:
-        np.ndarray: duration*frequencyx7 pose_matrix
+        np.ndarray: (duration*frequency) x 7 pose_matrix
     """
     v = triad_openvr.triad_openvr()
     v.print_discovered_objects()
@@ -52,16 +63,19 @@ def run_drift_steamvr(frequency: int = 10, duration: float = 10*60) -> np.ndarra
     return pose_matrix
 
 
-def run_drift_libsurvive(frequency=10, duration=10*60) -> np.ndarray:
+def run_drift_libsurvive(
+    frequency: int,
+    duration: float
+) -> np.ndarray:
     """runs the routine to get the tracker pose from libsurive for the given duration
     in seconds with the given frequency
 
     Args:
-        frequency (int, optional): how often measurements are taken Defaults to 10.
-        duratation (int, optional): how long measurements are taken Defaults to 10.
+        frequency (int): 
+        duratation (float): 
 
     Returns:
-        np.ndarray: x y z w i j k
+        np.ndarray: (duration*frequency) x 7 pose matrix
     """
     actx = get_simple_context(sys.argv)
     simple_start(actx)
@@ -75,12 +89,12 @@ def run_drift_libsurvive(frequency=10, duration=10*60) -> np.ndarray:
     stable_counter = 0
     time.sleep(0.05)
     print("Waiting for stability")
-    while stable_counter < 10:
+    while stable_counter < LIBSURVIVE_STABILITY_COUNTER:
         current_pose = tracker_obj_1.get_pose_quaternion()
         if not check_if_moved(
             initial_pose=last_pose,
             current_pose=current_pose,
-            moving_threshold=0.001
+            moving_threshold=LIBSURVIVE_STABILITY_THRESHOLD
         ):
             stable_counter += 1
 
@@ -106,17 +120,22 @@ def run_drift_libsurvive(frequency=10, duration=10*60) -> np.ndarray:
 
 
 if __name__ == "__main__":
+    """ 
+    SPECIFY EXPERIMENT SETTINGS HERE
+    """
     exp_num = 1
+    num_point = 1  # Point measured
     exp_type = "drift"
-    # settings:
     settings = {
-        "frequency": 10,  # Hz
-        "duration": 60*10,  # seconds
+        "frequency": DRIFT_FREQUENCY,  # Hz
+        "duration": DRIFT_DURATION,  # seconds
         "sys.args": sys.argv
     }
     framework = Framework("steamvr")
-
-    num_point = 1
+    """
+    CREATE NEW FILE LOCATION
+    increase point number until file doesnt yet exist
+    """
     file_location: Path = get_file_location(
         exp_type=exp_type,
         exp_num=exp_num,
@@ -160,9 +179,4 @@ if __name__ == "__main__":
         framework=framework,
         exp_type=exp_type
     )
-
-    # pos_mean = np.mean(pose_matrix, 0)[:3]
-    # pos = pose_matrix[:, :3]
-    # error_pos = np.linalg.norm(pos-pos_mean, axis=1)
-    # plt.plot(error_pos)
-    # plt.show()
+    print("Done with Drift")

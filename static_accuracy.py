@@ -1,3 +1,16 @@
+"""Script to run the static accuracy experiment for steamvr and libsurvive. 
+
+Experiment:
+Follows the guidelines set out by VDI/VDE 2634:
+Define mutliple poses within the desired measuring space. Measure the pose of 
+both trackers at each pose.
+
+Essentially, its simliar to the dynamic accuracy experiment but with static poses.
+
+Setup: 
+2 LH, 2 Trackers mounted on a bar facing away from each other, the bar itself 
+is mounted on a robot.
+"""
 import os
 import sys
 import time
@@ -9,6 +22,9 @@ import matplotlib.pyplot as plt
 
 from utils.general import Framework, get_file_location, save_data, check_if_moved
 from utils.GS_timing import delay
+from utils.consts import (STATIC_ACC_DURATION, STATIC_ACC_FREQUENCY,
+                          LIBSURVIVE_STABILITY_COUNTER, LIBSURVIVE_STABILITY_THRESHOLD)
+
 if os.name == 'nt':  # if windows
     import openvr
     import utils.triad_openvr as triad_openvr
@@ -28,8 +44,8 @@ def run_static_accuracy_steamvr(
     x y z w i j k x y z w i j k
 
     Args:
-        frequency (int, optional): (max) measuring frequency 
-        duration (float, optional): time during which the tracker are polled
+        frequency (int): (max) measuring frequency 
+        duration (float): time during which the tracker are polled
 
     Returns:
         np.ndarray: nx14 matrix containing poses of both trackers
@@ -67,8 +83,8 @@ def run_static_accuracy_libsurvive(
     x y z w i j k x y z w i j k
 
     Args:
-        frequency (int, optional): (max) measuring frequency 
-        duration (float, optional): time during which the tracker are polled
+        frequency (int): (max) measuring frequency 
+        duration (float): time during which the tracker are polled
     Returns:
         np.ndarray: nx14 matrix containing poses of both trackers
     """
@@ -85,12 +101,12 @@ def run_static_accuracy_libsurvive(
     stable_counter = 0
     time.sleep(0.05)
     print("Waiting for stability")
-    while stable_counter < 50:
+    while stable_counter < LIBSURVIVE_STABILITY_COUNTER:
         current_pose = tracker_obj_2.get_pose_quaternion()
         if not check_if_moved(
             initial_pose=last_pose,
             current_pose=current_pose,
-            moving_threshold=0.001
+            moving_threshold=LIBSURVIVE_STABILITY_THRESHOLD
         ):
             stable_counter += 1
 
@@ -124,8 +140,8 @@ if __name__ == "__main__":
     exp_type = "static_accuracy"
     # settings:
     settings = {
-        "frequency": 150,  # Hz
-        "duration": 2,  # seconds
+        "frequency": STATIC_ACC_FREQUENCY,  # Hz
+        "duration": STATIC_ACC_DURATION,  # seconds
         "sys.args": sys.argv
     }
     framework = Framework("libsurvive")
@@ -178,7 +194,8 @@ if __name__ == "__main__":
         settings=settings,
         framework=framework
     )
+    # adjusting because I deleted P3 in the .src and getting confused^^
     if num_point > 2:
-        num_point += 1  # adjusting because i deleted P3 in the .src and getting confused^^
+        num_point += 1
     print(f"Run for point {num_point}")
     print("Finished")

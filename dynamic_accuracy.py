@@ -35,9 +35,9 @@ import matplotlib.pyplot as plt
 
 from utils.GS_timing import delay
 from utils.general import Framework, get_file_location, save_data, check_if_moved
-from utils.linear_algebrea_helper import (
-    distance_between_hom_matrices,
-    transform_to_homogenous_matrix
+from utils.consts import (
+    DYNAMIC_ACC_FREQUENCY, LIBSURVIVE_STABILITY_COUNTER, LIBSURVIVE_STABILITY_THRESHOLD,
+    MOVING_THRESHOLD
 )
 
 if os.name == 'nt':  # if windows
@@ -75,7 +75,7 @@ def run_dynamic_accuarcy_steamvr(
     while not check_if_moved(
         current_pose=np.array(v.devices["tracker_1"].get_pose_quaternion()),
         initial_pose=inital_pose,
-        moving_threshold=0.02
+        moving_threshold=MOVING_THRESHOLD
     ):
         time.sleep(0.1)
     print("START Measuring")
@@ -138,12 +138,12 @@ def run_dynamic_accuarcy_libsurvive(
     stable_counter = 0
     time.sleep(0.05)
     print("Waiting for stability")
-    while stable_counter < 50:
+    while stable_counter < LIBSURVIVE_STABILITY_COUNTER:
         current_pose = tracker_obj_2.get_pose_quaternion()
         if not check_if_moved(
             initial_pose=last_pose,
             current_pose=current_pose,
-            moving_threshold=0.001
+            moving_threshold=LIBSURVIVE_STABILITY_THRESHOLD
         ):
             stable_counter += 1
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     exp_type = "dynamic_accuracy"
     # settings:
     settings = {
-        "frequency": 150,  # Hz
+        "frequency": DYNAMIC_ACC_FREQUENCY,  # Hz
         "velocity": "200 mm/s",
         "sys.args": sys.argv
     }
