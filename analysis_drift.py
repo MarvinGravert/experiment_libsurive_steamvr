@@ -14,12 +14,18 @@ from scipy.stats import ttest_ind
 from utils.general import Framework, get_file_location, load_data, average_pose
 from utils.linear_algebrea_helper import (
     eval_error_list,
-    calc_percentile_error
+    calc_percentile_error,
+    get_angle_from_rot_matrix,
+    quaternion_to_rot_matrix,
+    rotational_distance_quaternion
 )
 from utils.averageQuaternions import averageQuaternions
 
 
-def analyze_data(data: np.ndarray):
+def analyze_data(
+    data: np.ndarray,
+    time_frame: float
+):
     """Calculate the initial mean and subtract from the dataset and retun 
     said data.
 
@@ -31,8 +37,8 @@ def analyze_data(data: np.ndarray):
     """
     frequency = 10  # Hz
     # time considered for initial mean
-    initial_measurements = frequency*60  # Hz*seconds
-    final_measurements = frequency*60  # Hz seconds
+    initial_measurements = frequency*time_frame  # Hz*seconds
+    final_measurements = frequency*time_frame  # Hz seconds
     initial_poses, other_poses, final_poses = np.split(
         ary=data,
         indices_or_sections=[initial_measurements, final_measurements],
@@ -45,12 +51,18 @@ def analyze_data(data: np.ndarray):
     initial_pos, final_pos = initial_poses[:, :3], final_poses[:, :3]
     initial_rot, final_rot = initial_poses[:, 3:], final_poses[:, 3:]
 
+    final_rot_mean = averageQuaternions(final_rot)
+    initial_rot_mat = quaternion_to_rot_matrix(initial_rot_mean, scalar_first=True)
+    final_rot_mat = quaternion_to_rot_matrix(final_rot_mean, scalar_first=True)
+    diff_rot_mat = np.linalg.inv(final_rot_mat)@initial_rot_mat
+
     centered_initial_pos = initial_pos-initial_pos_mean
     centered_final_pos = final_pos-initial_pos_mean
     centered_data_pos = data[:, :3]-initial_pos_mean
 
     pos_distance = np.linalg.norm(np.mean(centered_initial_pos, 0)-np.mean(centered_final_pos, 0))
     print(f"Distance: {pos_distance}")
+    print(f"Rotational Distance: {get_angle_from_rot_matrix(diff_rot_mat)}")
     initial_norm = np.linalg.norm(centered_initial_pos, axis=1)
     final_norm = np.linalg.norm(centered_final_pos, axis=1)
     statis, p_value = ttest_ind(
@@ -83,6 +95,7 @@ if __name__ == "__main__":
     num_point = 3
     date = "20211015"
     framework: Framework = Framework("steamvr")
+    time_frame = 5  # seconds how long the comparison window for drift
 
     file_location = get_file_location(
         exp_type=exp_type,
@@ -92,7 +105,7 @@ if __name__ == "__main__":
         date=date
     )
     matrix = load_data(file_location)
-    steamvr_diff = analyze_data(matrix[100:, :])
+    steamvr_diff = analyze_data(matrix[400:, :], time_frame=time_frame)
 
     exp_num = 1
     exp_type = "drift"
@@ -108,8 +121,8 @@ if __name__ == "__main__":
         date=date
     )
     matrix = load_data(file_location)
-    libsurvive_diff = analyze_data(matrix[100:, :])
-
+    libsurvive_diff = analyze_data(matrix[500:, :], time_frame=time_frame)
+    print(libsurvive_diff.shape)
     plot_data(steamvr_diff[:, :3])
     plot_data(libsurvive_diff[:, :3])
-    plt.show()
+    # plt.show()
