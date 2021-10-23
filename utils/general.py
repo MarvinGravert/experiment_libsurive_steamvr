@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from more_itertools import chunked
+from utils.averageQuaternions import averageQuaternions
 
 
 class Framework(Enum):
@@ -170,3 +171,23 @@ def plot_cumultive(data: List[List[float]]):
     plt.ylim(ymin=0, ymax=1.05)
     plt.xlim(xmin=0)
     plt.show()
+
+
+def average_pose(pose_matrix: np.ndarray) -> np.ndarray:
+    """average a pose consisting of translational and quaternion of the strucuture
+    x y z w i j k
+
+    applies standard averaging for the first 3 and quaternion averaging for the quatnernion
+
+    Args:
+        pose_matrix (np.ndarray): Nx7 matrix
+
+    Returns:
+        np.ndarray: 1x7 of averaged data
+    """
+    pos = pose_matrix[:, :3]
+    rot = pose_matrix[:, 3:]
+    pos_mean = np.mean(pos, 0)
+    rot_mean = averageQuaternions(rot)
+
+    return np.concatenate((pos_mean, rot_mean))
