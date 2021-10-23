@@ -251,41 +251,28 @@ def build_coordinate_system_via_3_points(origin, x_axis_point, y_axis_point) -> 
     return combine_to_homogeneous_matrix(rotation_matrix=rot, translation_vector=origin)
 
 
-def hook(a, b):
-    r1, t1 = separate_from_homogeneous_matrix(a)
-    r2, t2 = separate_from_homogeneous_matrix(b)
+def distance_between_hom_matrices(
+    actual_hom: np.ndarray,
+    ideal_hom: np.ndarray
+) -> Tuple[float]:
+    """calculates the relative distance between two homgenous matrices by
+    comparing the translational and rotational distance they apply to points.
+    Returns the normed translational and angular distances
+    Args:
+        actual_hom (np.ndarray): 4x4 homogenous matrix
+        ideal_hom (np.ndarray): 4x4 homogenous matrix
+
+    Returns:
+        Tuple[float]: distance, angle (in deg)
+    """
+    r1, t1 = separate_from_homogeneous_matrix(actual_hom)
+    r2, t2 = separate_from_homogeneous_matrix(ideal_hom)
     alpha1 = get_angle_from_rot_matrix(r1)
     alpha2 = get_angle_from_rot_matrix(r2)
     dist1 = np.linalg.norm(t1)
     dist2 = np.linalg.norm(t2)
     # TODO: theoretically we are not allowd to take absolute
     return np.abs(dist1-dist2), np.abs(alpha1-alpha2)
-
-
-def distance_between_hom_matrices(actual_hom, ideal_hom) -> Tuple[float]:
-    """calculates the distances between two coordiante systems which are related 
-    by a common system. The homogenous transformatino matrix are handed over and
-    the angle and distance are calculated (axis independent)
-    (axis could be changed quickly though)
-
-    IMPORTANT:
-    first hom B->A 
-    second hom C->A 
-    results in B->C (translative and rotational distance)
-
-    Args:
-        hom_matrix_b ([type]): [description]
-        hom_matrix_c ([type]): [description]
-
-    Returns:
-        Tuple[float]: distance, angle (in deg)
-    """
-    return hook(actual_hom, ideal_hom)
-    hom_matrixb2c = np.linalg.inv(hom_matrix_c)@hom_matrix_b
-    R, t = separate_from_homogeneous_matrix(hom_matrixb2c)
-    angle = get_angle_from_rot_matrix(R)  # angle in deg
-    dist = np.linalg.norm(t)  # if axis required dont norm and just return the vector
-    return dist, angle
 
 
 def distance_between_rotation_matrices(
