@@ -1,47 +1,62 @@
+"""Parses the .dat file containing the waypoint positions of the kuka.
+Includes a plotting function to plot the points
+"""
 import re
 from pathlib import Path
 
-from loguru import logger
 import matplotlib.pyplot as plt
 import numpy as np
-file_loc = Path("./MarStaticAcc.dat")
-with file_loc.open("r") as file:
-    t = file.read().replace('\n', '')
-
-pattern = '=\{X[^S]*'
-result = re.findall(pattern, t)
-""" 
-list of the point coordinates. 
-Example:
-XP1={X 530.457397,Y 75.6248474,Z 750.328064,A -165.776642,B 0.319188625,C 0.329238772,
-We are interested in X Y Z, soo 
-"""
-waypoint_list = list()
-for test in result:
-
-    coordinates = test.split("X ")[1].split(",A")[0]
-    # remove Y Z and space
-    for i in (("Y", ""), ("Z", ""), (" ", "")):
-        coordinates = coordinates.replace(*i)
-
-    coor = [float(i) for i in coordinates.split(",")]
-    waypoint_list.append(coor)
-
-waypoint_matrix = np.array(waypoint_list)
-
-print(waypoint_list)
 
 
-def plot_robo_calibration_points(rob_points):
-    min = np.amin(rob_points, axis=0)
-    max = np.amax(rob_points, axis=0)
+def import_waypoints(file_loc: Path) -> np.ndarray:
+    """import the waypoints inside the file given by file_loc
+
+    Example:
+    XP1={X 530.457397,Y 75.6248474,Z 750.328064,A -165.776642,B 0.319188625,C 0.329238772,
+    We are interested in X Y Z, soo using regex we extract them
+
+    Args:
+        file_loc (Path): location of the file
+
+    Returns:
+        np.ndarray: Nx3 Matrix
+    """
+    with file_loc.open("r") as file:
+        t = file.read().replace('\n', '')
+
+    pattern = '=\{X[^S]*'
+    result = re.findall(pattern, t)
+    waypoint_list = list()
+    for waypoint in result:
+
+        coordinates = waypoint.split("X ")[1].split(",A")[0]
+        # remove Y Z and space
+        for i in (("Y", ""), ("Z", ""), (" ", "")):
+            coordinates = coordinates.replace(*i)
+
+        coor = [float(i) for i in coordinates.split(",")]
+        waypoint_list.append(coor)
+
+    waypoint_matrix = np.array(waypoint_list)
+    print(f"Imported {len(waypoint_list)} waypoints")
+    return waypoint_matrix
+
+
+def plot_3d_points(points: np.ndarray):
+    """Createsa 3D plot of the given points.
+    Also creates a boundary box plot
+
+    Args:
+        points (np.ndarray): Nx3
+    """
+    min = np.amin(points, axis=0)
+    max = np.amax(points, axis=0)
 
     fig = plt.figure(figsize=(8, 6), dpi=150)
-    # fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.view_init(elev=18, azim=-159)
 
-    for i, row in enumerate(rob_points):
+    for i, row in enumerate(points):
         if i < 26:
             ax.scatter(row[0], row[1], row[2], c="orange")
             # ax.text(row[0], row[1], row[2],  '%s' % (str(i+1)), size=10, zorder=1,  color='k')
@@ -55,7 +70,9 @@ def plot_robo_calibration_points(rob_points):
     # test = upsidedown.transform('z [mm]')
     # ax.set_zlabel(test, fontsize=10)
     # ax.set_zticks([0, 400, 500, 600, 700, 800])
-    # BUILD CUBE
+    """
+        BUILD BOUNDING BOX 
+    """
     center = min+(max-min)/2
     size = max-min+[20, 20, 20]
     # https://stackoverflow.com/questions/30715083/python-plotting-a-wireframe-3d-cuboid
@@ -94,5 +111,8 @@ def plot_robo_calibration_points(rob_points):
     plt.show()
 
 
-test = waypoint_matrix[:, :3]
-plot_robo_calibration_points(test)
+if __name__ == "__main__":
+    file_loc = Path("data/robot_program_files/MarDriftWiederholbarkeit.dat")
+    waypoints = import_waypoints(file_loc=file_loc)
+    print(waypoints.shape)
+    plot_3d_points(waypoints)
