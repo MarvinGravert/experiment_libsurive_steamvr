@@ -1,9 +1,21 @@
+"""Script to extract the relative position between the two trackers mounted on the 
+bar.
+
+The tracker holder has holes for laser targets to be put into. Using a laser
+tracker these were used to construct two KOS. So as to get the transformation
+between them. 
+
+The transformation between the tracker holders in combination with the 
+position of the trackers on the tracker holders is used to calculate the 
+relative transformation between the two trackers which is used as a reference
+for the static and dynamic accuarcy experiments
+"""
 from pathlib import Path
-from abc import ABC
+
 import numpy as np
+
 from utils.linear_algebrea_helper import (
-    build_coordinate_system_via_3_points,
-    distance_between_hom_matrices
+    build_coordinate_system_via_3_points
 )
 
 
@@ -13,8 +25,33 @@ def get_laser_data():
     return temp[:, :3]
 
 
-class TransformFramework(ABC):
+class TrackerTransform():
+    """class describing the transformation between the two trackers
+    The coordinate system of the tracker is the same in libsurive and 
+    steamvr hence one can be used for each
+    """
+    T_tracker_to_lt1 = np.array([[1, 0, 0, 25],
+                                [0, 1, 0, 85],
+                                [0, 0, 1, -9],
+                                [0, 0, 0, 1]])
+
+    T_lt2_to_tracker = np.array([[-1, 0, 0, 25],
+                                [0, 1, 0, -85],
+                                [0, 0, -1, 0],
+                                [0, 0, 0, 1]])
+
     def get_laser_hom(self) -> np.ndarray:
+        """calculates the matrix between the tracker holders based on the
+        laser tracker measurements. 
+
+        the data file contains two sets of measurements each consisting of
+        8 points
+        1 coordinate system: origin->x->y->origin
+        2 coordinate system: origin->x->y->origin
+
+        Returns:
+            np.ndarray: 4x4 homogenous matrix
+        """
         laser_data = get_laser_data()
         first_kos = laser_data[8:11, :]
         second_kos = laser_data[4:7, :]
@@ -39,31 +76,6 @@ class TransformFramework(ABC):
         return temp
 
 
-class TransformSteamVR(TransformFramework):
-
-    T_tracker_to_lt1 = np.array([[1, 0, 0, 25],
-                                [0, 1, 0, 85],
-                                [0, 0, 1, -9],
-                                [0, 0, 0, 1]])
-
-    T_lt2_to_tracker = np.array([[-1, 0, 0, 25],
-                                [0, 1, 0, -85],
-                                [0, 0, -1, 0],
-                                [0, 0, 0, 1]])
-
-
-class TransformLibsurvive(TransformFramework):
-    T_tracker_to_lt1 = np.array([[1, 0, 0, 25],
-                                [0, -1, 0, 85],
-                                [0, 0, -1, -9],
-                                [0, 0, 0, 1]])
-
-    T_lt2_to_tracker = np.array([[-1, 0, 0, 25],
-                                [0, -1, 0, 85],
-                                [0, 0, 1, 0],
-                                [0, 0, 0, 1]])
-
-
 if __name__ == "__main__":
     laser_data = get_laser_data()
     first_kos = laser_data[8:11, :]
@@ -80,8 +92,6 @@ if __name__ == "__main__":
     2. Calculate the transformation matrix between the KOS
     3. Calculate the distance from
     """
-    t = TransformLibsurvive()
-    t = TransformSteamVR()
-
+    t = TrackerTransform()
     test = t.T_lt2_to_tracker@diff_T@t.T_tracker_to_lt1
     print(test)
