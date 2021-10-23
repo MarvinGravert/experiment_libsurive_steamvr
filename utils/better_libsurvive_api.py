@@ -1,3 +1,7 @@
+"""Datatypes wrapper to access and work with libsurvive. 
+Inlcudes a lookup table for the devices
+
+"""
 import ctypes
 from typing import List, Dict
 from dataclasses import dataclass, field
