@@ -318,12 +318,12 @@ def quaternion_angle_rotation(
     return np.rad2deg(2*np.arcsin(temp))
 
 
-def rotational_distance_quaternion(
+def rotational_difference_quaternion(
     quat_a: Union[np.ndarray, List[float]],
     quat_b: Union[np.ndarray, List[float]],
     scalar_first=False
 ) -> float:
-    """calculates the rotational distance between two quaternion in DEGREE!
+    """calculates the rotational difference between two quaternion in DEGREE!
 
     Args:
         quat_a (np.ndarray):  i j k w 
@@ -336,6 +336,40 @@ def rotational_distance_quaternion(
     angle_a = quaternion_angle_rotation(quat=quat_a, scalar_first=scalar_first)
     angle_b = quaternion_angle_rotation(quat=quat_b, scalar_first=scalar_first)
     return np.abs(angle_a-angle_b)
+
+
+def rotational_distance_quaternion(
+    quat_a: Union[np.ndarray, List[float]],
+    quat_b: Union[np.ndarray, List[float]],
+    scalar_first=False
+) -> float:
+    """calculates the rotational distance between two quaternion in DEGREE!
+
+    assumes that both quaternion describe the rotation to a common base coordinate
+    aka quat_a=>A->C
+    quat_b=>B-C
+
+    Calculates the relative transformation A->B and evaluates the distance
+    in terms of translation and rotation
+
+    Args:
+        quat_a (np.ndarray):  i j k w 
+        quat_b (np.ndarray):  i j k w 
+        scalar_first (bool, optional): changes format to w i j k. Defaults to False.
+
+    Returns:
+        float: angle in DEGREE
+    """
+    if scalar_first:
+        w, i, j, k = quat_a
+        rot_a = R.from_quat([i, j, k, w])
+        w, i, j, k = quat_b
+        rot_b = R.from_quat([i, j, k, w])
+    else:
+        rot_a = R.from_quat(quat_a)
+        rot_b = R.from_quat(quat_b)
+    r = rot_b.inv()*rot_a
+    return get_angle_from_rot_matrix(r.as_matrix())
 
 
 def quaternion_to_rot_matrix(
@@ -358,12 +392,3 @@ def quaternion_to_rot_matrix(
 
     rot = R.from_quat([i, j, k, w])
     return rot.as_matrix()
-
-
-if __name__ == "__main__":
-    q = [-2.795781125711595538e-01, -8.938646679072810297e-01, -3.411339826111457474e-01,
-         8.043407453320410017e-02]
-    t = quaternion_angle_rotation(q, scalar_first=True)
-    test_rot = quaternion_to_rot_matrix(q, scalar_first=True)
-    print(t)
-    print(get_angle_from_rot_matrix(test_rot))
