@@ -17,7 +17,7 @@ from utils.linear_algebrea_helper import (
     calc_percentile_error,
     get_angle_from_rot_matrix,
     quaternion_to_rot_matrix,
-    rotational_distance_quaternion
+    rotational_difference_quaternion
 )
 from utils.averageQuaternions import averageQuaternions
 
