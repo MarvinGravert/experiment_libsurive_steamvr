@@ -13,60 +13,42 @@ from utils.linear_algebrea_helper import (
     transform_to_homogenous_matrix)
 from utils.averageQuaternions import averageQuaternions
 from utils.general import (
-    Framework, load_data, get_file_location
+    Framework, load_data, get_file_location, plot_cumultive
 )
-from laser_trans import TransformLibsurvive, TransformSteamVR
+from calc_tracker_transform import TrackerTransform
 
 
-def average_pose(pose_matrix: np.ndarray) -> np.ndarray:
-    """average a pose consisting of translational and quaternion of the strucuture
-    x y z w i j k
-
-    applies standard averaging for the first 3 and quaternion averaging for the quatnernion
-
-    Args:
-        pose_matrix (np.ndarray): Nx7 matrix
-
-    Returns:
-        np.ndarray: 1x7 of averaged data
-    """
-    pos = pose_matrix[:, :3]
-    rot = pose_matrix[:, 3:]
-    pos_mean = np.mean(pos, 0)
-    rot_mean = averageQuaternions(rot)
-    return np.concatenate((pos_mean, rot_mean))
-
-
-def analyze_data(data_list):
+def calc_error(data_list):
     """
     we have data of both trackers to analyse we do the following:
     1. loop over data to get the measurement for each position
-    2. split into two
-    3. put back into list (as hom)
-    4. calculate for each position the measured homogenous matrix
+     split into two
+        1.1 Potentially resample
+        1.2 Potentially cut data 
+    2. calculate for each position the measured homogenous matrix
     5. compare to expected matrix
-    6. Analyze the difference
     """
     first_tracker_list = list()
     second_tracker_list = list()
     """ 
-    Split and Average
+    1.1 Resample Or not
     """
     for pose_data in data_list:
         first_tracker_list.append(pose_data[:, :7])
         second_tracker_list.append(pose_data[:, 7:])
+
         # temp = resample_poly(pose_data[:, :7], 1500, len(pose_data))
         # first_tracker_list.append(temp)
         # temp = resample_poly(pose_data[:, 7:], 1500, len(pose_data))
         # second_tracker_list.append(temp)
 
-    #     temp = resample(pose_data[:, :7], 2500)
-    #     first_tracker_list.append(temp)
-    #     temp = resample(pose_data[:, 7:], 2500)
-    #     second_tracker_list.append(temp)
-    # print(len(first_tracker_list[0]))
+        # temp = resample(pose_data[:, :7], 1500)
+        # first_tracker_list.append(temp)
+        # temp = resample(pose_data[:, 7:], 1500)
+        # second_tracker_list.append(temp)
+        # print(len(first_tracker_list[0]))
     """
-    CUTTIGN DATA depending on a set dict (1->only first 19sec etc)
+    1.2 CUTTIGN DATA depending on a set dict (1->only first 19sec etc)
     """
     # cuttingStart = {
     #     1: 0,
@@ -86,16 +68,14 @@ def analyze_data(data_list):
     #                        for i, pose_data in enumerate(second_tracker_list, start=1)]
     """ 
     Calculate homgenous matrix and compare to expected
+    each data measured point has to transformed to homogenous matrix! 
     """
-    if framework == Framework.libsurvive:
-        expected_hom = TransformLibsurvive().get_tracker_2_tracker(scaling=0.001)
-        expected_hom = TransformSteamVR().get_tracker_2_tracker(scaling=0.001)
-    elif framework == Framework.steamvr:
-        expected_hom = TransformSteamVR().get_tracker_2_tracker(scaling=0.001)
+    expected_hom = TrackerTransform().get_tracker_2_tracker(scaling=0.001)
 
     first_hom_list = list()
     second_hom_list = list()
     for first, second in zip(first_tracker_list, second_tracker_list):
+        # first=>List[np.ndarray]
         first_hom_list.append([transform_to_homogenous_matrix(
             position=f[:3],
             quaternion=f[3:],
@@ -106,6 +86,9 @@ def analyze_data(data_list):
             quaternion=s[3:],
             scalar_first=True
         )for s in second])
+    """ 
+        3. Compare to expected matrix
+    """
     actual_hom_list = list()
     error_list = list()
     for first, second in zip(first_hom_list, second_hom_list):
@@ -115,88 +98,70 @@ def analyze_data(data_list):
             temp = distance_between_hom_matrices(actual_hom, expected_hom)
             error_list.append(temp)
 
-    pos_error_list = np.array(error_list)[:, 0]*1000
+    pos_error_list = np.array(error_list)[:, 0]
     rot_error_list = np.array(error_list)[:, 1]
-    print(eval_error_list(pos_error_list))
-    print(len(pos_error_list))
-    # print(eval_error_list(rot_error_list))
-    # plot_cumultive([pos_error_list])
-    # plt.plot(first_tracker_list[3][:, :3])
-    plt.plot(pos_error_list)
+    return pos_error_list, rot_error_list
+
+
+def analyze_error(error_list):
+
+    error_percentile = calc_percentile_error(error_list)
+    eval_data = eval_error_list(error_list=error_list)
+    print(np.array(eval_data))
+    # print(error_percentile)
+
+
+def plot_error_axis(err_data):
+    plt.figure()
+    plt.plot(err_data)
     plt.show()
 
 
-def plot_cumultive(data: List[List[float]]):
-    # def plot_cumultive_distribution(data_points: List[float], relevant_data: float):
-    n_list = list()
-    x_list = list()
-    y_list = list()
+def plot_mult_line(data_list: List[float]):
     plot_list = list()
-    for total in data:
-        n = len(total)
-        x = np.sort(total)
-        y = np.arange(n)/n
-        n_list.append(n)
-        x_list.append(x)
-        y_list.append(y)
-        plot_list.append((x, y))
-
-    acc = round(np.mean(total), 2)
-    std = round(np.std(total), 2)
-    minVal = round(min(total), 2)
-    maxVal = round(max(total), 2)
-    # plotting
-    plt.figure(dpi=200)
-    # popt, pcov = curve_fit(func, x, y)
-    plt.xlabel('Mittleres Abstandsquadrat [mm]', fontsize=15)
-    plt.ylabel('Kumulative Häufigkeit', fontsize=15)
-
-    # Min: {minVal:n}mm Max: {maxVal:n}mm
-    plt.title('Roboter-Referenzierung RMSE:\n'+f'{acc:n}mm\u00B1{std:n}mm', fontsize=15)
-    # TODO: check naming kumulativer Fehler, evtl Verteilungsfunktion? siehe Normalverteilung
-    print(len(x))
-    for plotty in plot_list:
-        plt.scatter(x=plotty[0], y=plotty[1], marker='o')
-    # plt.scatter(relevant_data, y=highlighted_y)
-    # plt.plot(x, func(x, *popt), 'r-', label="Fitted Curve")
-    plt.grid()
-    # ticks
-    ticky = list()
-    for ti in chunked(x, 13):
-        ticky.append(round(np.mean(ti), 0))
-    # ticky = [20, 50, 80]
-    # plt.xticks(np.linspace(start=min(x), stop=max(x), num=20, dtype=int))
-    # accuracy line
-    plt.vlines(acc, ymin=0, ymax=2, colors="r")
-    ticky.append(acc)
-    # plt.ticklabel_format(useLocale=True)
-    # add stuff
-    # plt.xticks(ticky)
-    plt.ylim(ymin=0, ymax=1.05)
-    plt.xlim(xmin=0)
+    low = 0
+    for data in data_list:
+        up = low+len(data)
+        plot_list.append((low, up, data))
+        low = up
+    plt.figure()
+    for (x_l, x_u, y) in plot_list:
+        plt.plot(np.arange(start=x_l, stop=x_u), y)
     plt.show()
 
 
-if __name__ == "__main__":
-    exp_type = "dynamic_accuracy"
-    date = "20211014"
-    exp_num = 2
-    framework = Framework("steamvr")
-    data_list = list()
+def get_single_data(
+    exp_type: str,
+    date: str,
+    exp_num: int,
+    framework: Framework,
+    num_point: int
+) -> np.ndarray:
     """
     Individual data sets 
     """
-    # file_loc = get_file_location(
-    #     exp_type=exp_type,
-    #     exp_num=exp_num,
-    #     date=date,
-    #     framework=framework,
-    #     num_point=3
-    # )
-    # data_list.append(load_data(file_location=file_loc))
+    data_list = list()
+    file_loc = get_file_location(
+        exp_type=exp_type,
+        exp_num=exp_num,
+        date=date,
+        framework=framework,
+        num_point=num_point
+    )
+    data_list.append(load_data(file_location=file_loc))
+    return data_list[0]
+
+
+def get_all_data(
+    exp_type: str,
+    date: str,
+    exp_num: int,
+    framework: Framework,
+) -> List[np.ndarray]:
     """
     All data
     """
+    data_list = list()
     try:
         num_point = 1
         while True:
@@ -212,4 +177,85 @@ if __name__ == "__main__":
     except OSError:
         # end the loop if thee is no more data in the directory
         pass
-    analyze_data(data_list)
+    return data_list
+
+
+if __name__ == "__main__":
+    """
+        SteamVR
+    """
+    exp_type = "dynamic_accuracy"
+    date = "20211020"
+    exp_num = 1
+    framework = Framework("steamvr")
+    steam_data = get_all_data(
+        exp_type=exp_type,
+        exp_num=exp_num,
+        framework=framework,
+        date=date
+    )
+    err_pos_steamvr, err_rot_steamvr = calc_error(data_list=steam_data)
+    analyze_error(err_pos_steamvr)
+    # analyze_error(err_rot_steamvr)
+    """
+        Libsurvive
+    """
+    exp_type = "dynamic_accuracy"
+    date = "20211020"
+    exp_num = 1
+    framework = Framework("libsurvive")
+    libsurvive_data = get_all_data(
+        exp_type=exp_type,
+        exp_num=exp_num,
+        framework=framework,
+        date=date
+    )
+    err_pos_libsurvive, err_rot_libsurvive = calc_error(data_list=libsurvive_data)
+    analyze_error(err_pos_libsurvive)
+    # analyze_error(err_rot_libsurvive)
+
+    # plot_cumultive(
+    #     data=[err_pos_libsurvive, err_pos_steamvr]
+    # )
+
+    # """
+    #     Plot mulitple experiments same framework (speed increase)
+    # """
+    # speed_err = list()
+    # for i in range(1, 5):
+    #     exp_type = "dynamic_accuracy"
+    #     date = "20211020"
+    #     exp_num = i
+    #     framework = Framework("libsurvive")
+    #     t = get_all_data(
+    #         exp_type=exp_type,
+    #         exp_num=exp_num,
+    #         framework=framework,
+    #         date=date
+    #     )
+
+    #     speed_err.append(calc_error(t)[0])
+    # plot_cumultive(speed_err)
+    """ plot lines depending
+    """
+    exp_type = "dynamic_accuracy"
+    date = "20211020"
+    exp_num = 1
+    framework = Framework("libsurvive")
+    single_data_list = list()
+    len_list = list()
+    for i in range(1, 5):
+        test = get_single_data(
+            exp_type=exp_type,
+            exp_num=exp_num,
+            framework=framework,
+            date=date,
+            num_point=i
+        )
+        single_data_list.append(test)
+        len_list.append(len(test))
+
+    err_pos_steamvr, err_rot_steamvr = calc_error(data_list=single_data_list)
+    # last entry is not necessary as it represents the overall lenght
+    splits = np.cumsum(len_list)[:-1]
+    plot_mult_line(np.split(ary=err_pos_steamvr, indices_or_sections=splits))
