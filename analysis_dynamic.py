@@ -13,9 +13,12 @@ from utils.linear_algebrea_helper import (
     transform_to_homogenous_matrix)
 from utils.averageQuaternions import averageQuaternions
 from utils.general import (
-    Framework, load_data, get_file_location, plot_cumultive
+    Framework, load_data, get_file_location, plot_cumultive, box_plot
 )
 from calc_tracker_transform import TrackerTransform
+
+import locale
+locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
 
 
 def calc_error(data_list):
@@ -124,9 +127,19 @@ def plot_mult_line(data_list: List[float]):
         up = low+len(data)
         plot_list.append((low, up, data))
         low = up
-    plt.figure()
-    for (x_l, x_u, y) in plot_list:
-        plt.plot(np.arange(start=x_l, stop=x_u), y)
+    plt.figure(dpi=200)
+    for i, (x_l, x_u, y) in enumerate(plot_list):
+        if i == 0 or i == 2:
+            plt.plot(np.arange(start=x_l, stop=x_u), y, c="r")
+        else:
+            plt.plot(np.arange(start=x_l, stop=x_u), y, c="r")
+    plt.xlabel('Datenpunkt', fontsize=15)
+    plt.ylabel('Fehler [mm]', fontsize=15)
+    # plt.title('Messreihe 200\u2009mm/s :\nSteamVR', fontsize=15)
+    plt.title('Messung 2:\nlibsurvive 0°', fontsize=15)
+    # plt.legend(["90°", "0°"], loc="upper left")
+    plt.yticks([0, 20, 40, 60, 80])
+    plt.ylim(top=93)
     plt.show()
 
 
@@ -149,6 +162,7 @@ def get_single_data(
         num_point=num_point
     )
     data_list.append(load_data(file_location=file_loc))
+    print(f"{framework}: appended {num_point}")
     return data_list[0]
 
 
@@ -173,6 +187,7 @@ def get_all_data(
                 num_point=num_point
             )
             data_list.append(load_data(file_location=file_loc))
+            print(f"{framework}: appended {num_point}")
             num_point += 1
     except OSError:
         # end the loop if thee is no more data in the directory
@@ -186,7 +201,7 @@ if __name__ == "__main__":
     """
     exp_type = "dynamic_accuracy"
     date = "20211020"
-    exp_num = 1
+    exp_num = 4
     framework = Framework("steamvr")
     steam_data = get_all_data(
         exp_type=exp_type,
@@ -202,7 +217,7 @@ if __name__ == "__main__":
     """
     exp_type = "dynamic_accuracy"
     date = "20211020"
-    exp_num = 1
+    exp_num = 4
     framework = Framework("libsurvive")
     libsurvive_data = get_all_data(
         exp_type=exp_type,
@@ -211,16 +226,25 @@ if __name__ == "__main__":
         date=date
     )
     err_pos_libsurvive, err_rot_libsurvive = calc_error(data_list=libsurvive_data)
-    analyze_error(err_pos_libsurvive)
+
+    err_pos_steamvr = np.array(err_pos_steamvr)*1000
+    err_pos_libsurvive = np.array(err_pos_libsurvive)*1000
+
+    # analyze_error(err_pos_steamvr)
+    # analyze_error(err_rot_steamvr)
+    # analyze_error(err_pos_libsurvive)
     # analyze_error(err_rot_libsurvive)
 
     # plot_cumultive(
     #     data=[err_pos_libsurvive, err_pos_steamvr]
     # )
+    # box_plot(
+    #     data=[err_pos_libsurvive, err_pos_steamvr]
+    # )
 
-    # """
-    #     Plot mulitple experiments same framework (speed increase)
-    # """
+    """
+        Plot mulitple experiments same framework (speed increase)
+    """
     # speed_err = list()
     # for i in range(1, 5):
     #     exp_type = "dynamic_accuracy"
@@ -234,9 +258,9 @@ if __name__ == "__main__":
     #         date=date
     #     )
 
-    #     speed_err.append(calc_error(t)[0])
+    #     speed_err.append(np.array(calc_error(t))[0]*1000)  # take position and not rotation
     # plot_cumultive(speed_err)
-    """ plot lines depending
+    """ plot the error along the data points and split them up into measurements sets
     """
     exp_type = "dynamic_accuracy"
     date = "20211020"
@@ -244,18 +268,60 @@ if __name__ == "__main__":
     framework = Framework("libsurvive")
     single_data_list = list()
     len_list = list()
-    for i in range(1, 5):
-        test = get_single_data(
-            exp_type=exp_type,
-            exp_num=exp_num,
-            framework=framework,
-            date=date,
-            num_point=i
-        )
-        single_data_list.append(test)
-        len_list.append(len(test))
-
-    err_pos_steamvr, err_rot_steamvr = calc_error(data_list=single_data_list)
+    # for i in range(1, 5):
+    #     test = get_single_data(
+    #         exp_type=exp_type,
+    #         exp_num=exp_num,
+    #         framework=framework,
+    #         date=date,
+    #         num_point=i
+    #     )
+    #     single_data_list.append(test)
+    #     len_list.append(len(test))
+    # single experiment plot
+    test = get_single_data(
+        exp_type=exp_type,
+        exp_num=exp_num,
+        framework=framework,
+        date=date,
+        num_point=2
+    )
+    single_data_list.append(test)
+    err_pos, err_rot = calc_error(data_list=single_data_list)
     # last entry is not necessary as it represents the overall lenght
     splits = np.cumsum(len_list)[:-1]
-    plot_mult_line(np.split(ary=err_pos_steamvr, indices_or_sections=splits))
+    err_pos = np.array(err_pos)*1000
+    plot_mult_line(np.split(ary=err_pos, indices_or_sections=splits))
+    """ plot reduced libsurvive
+    """
+    # exp_type = "dynamic_accuracy"
+    # date = "20211020"
+    # exp_num = 1
+    # framework = Framework("steamvr")
+    # single_data_list = list()
+    # for i in [1, 3]:
+    #     exp_type = "dynamic_accuracy"
+    #     date = "20211020"
+    #     exp_num = 1
+    #     framework = Framework("libsurvive")
+    #     t = get_single_data(
+    #         exp_type=exp_type,
+    #         exp_num=exp_num,
+    #         framework=framework,
+    #         date=date,
+    #         num_point=i
+    #     )
+    #     single_data_list.append(t)
+
+    # red_lib_pos_err, red_lib_rot_err = calc_error(single_data_list)
+
+    # red_lib_pos_err = np.array(red_lib_pos_err)*1000
+    # red_lib_rot_err = np.array(red_lib_rot_err)
+    # analyze_error(red_lib_pos_err)
+    # analyze_error(red_lib_rot_err)
+    # # plot_cumultive(
+    # #     data=[err_pos_libsurvive, err_pos_steamvr, red_lib_pos_err]
+    # # )
+    # box_plot(
+    #     data=[err_pos_libsurvive, err_pos_steamvr, red_lib_pos_err]
+    # )

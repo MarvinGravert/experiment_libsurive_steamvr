@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 from more_itertools import chunked
 from utils.averageQuaternions import averageQuaternions
 
+import locale
+locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
+
 
 class Framework(Enum):
     steamvr = "steamvr"
@@ -138,9 +141,9 @@ def plot_cumultive(data: List[List[float]]):
         plot_list.append((x, y))
 
     acc = round(np.mean(total), 2)
-    std = round(np.std(total), 2)
-    minVal = round(min(total), 2)
-    maxVal = round(max(total), 2)
+    # std = round(np.std(total), 2)
+    # minVal = round(min(total), 2)
+    # maxVal = round(max(total), 2)
     # plotting
     plt.figure(dpi=200)
     # popt, pcov = curve_fit(func, x, y)
@@ -149,7 +152,7 @@ def plot_cumultive(data: List[List[float]]):
 
     # Min: {minVal:n}mm Max: {maxVal:n}mm
     # plt.title('Statische Genauigkeit: :\n'+f'{acc:n}mm\u00B1{std:n}mm', fontsize=15)
-    plt.title('Wiederholbarkeit', fontsize=15)
+    plt.title('Dynamische Genauigkeit: Position', fontsize=15)
     for plotty in plot_list:
         plt.scatter(x=plotty[0], y=plotty[1], marker='o')
     # plt.scatter(relevant_data, y=highlighted_y)
@@ -162,14 +165,32 @@ def plot_cumultive(data: List[List[float]]):
     # ticky = [20, 50, 80]
     # plt.xticks(np.linspace(start=min(x), stop=max(x), num=20, dtype=int))
     # accuracy line
-    for acc in data:
-        plt.vlines(np.mean(acc), ymin=0, ymax=2, colors="r")
+    # for acc in data:
+    #     plt.vlines(np.mean(acc), ymin=0, ymax=2, colors="r")
     ticky.append(acc)
-    # plt.ticklabel_format(useLocale=True)
+    plt.ticklabel_format(useLocale=True)
+    # plt.legend(["libsurvive", "SteamVR"], loc='center right')
+    plt.legend(["libsurvive", "SteamVR", "libsurvive reduziert"], loc='center right')
+    # plt.legend(["200 m/s", "300 mm/s", "500 mm/s", "1000 mm/s"], loc='center right')
     # add stuff
     # plt.xticks(ticky)
     plt.ylim(ymin=0, ymax=1.05)
     plt.xlim(xmin=0)
+    plt.show()
+
+
+def box_plot(data):
+    plt.figure(dpi=200)
+    # plt.title('Statische Genauigkeit: Position', fontsize=15)
+    plt.title('Dynamische Genauigkeit: Position\n1000\u2009mm/s', fontsize=15)
+    ax = plt.gca()
+    ax.ticklabel_format(useLocale=True)
+    # data = [i for i in data]
+    plt.boxplot(data, labels=["libsurvive", "SteamVR"])
+    # plt.boxplot(data, labels=["libsurvive", "SteamVR", "libsurvive\nreduziert"])
+    plt.ylabel('Fehler [mm]', fontsize=15)
+    # ax.tick_params(axis='y', labelrotation=45, labelsize=12)
+    ax.tick_params(axis='x',  labelsize=15)
     plt.show()
 
 

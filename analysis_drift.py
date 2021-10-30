@@ -61,7 +61,7 @@ def analyze_data(
     centered_data_pos = data[:, :3]-initial_pos_mean
 
     pos_distance = np.linalg.norm(np.mean(centered_initial_pos, 0)-np.mean(centered_final_pos, 0))
-    print(f"Distance: {pos_distance}")
+    print(f"Distance: {pos_distance*1000}")
     print(f"Rotational Distance: {get_angle_from_rot_matrix(diff_rot_mat)}")
     initial_norm = np.linalg.norm(centered_initial_pos, axis=1)
     final_norm = np.linalg.norm(centered_final_pos, axis=1)
@@ -89,6 +89,20 @@ def plot_data(diff):
     # plt.show()
 
 
+def plot_x_y_plane(data_list):
+    import matplotlib.pyplot as plt
+    from scipy.signal import resample
+    for data in data_list:
+        data = resample(data, num=1000, axis=0)
+        print(data.shape)
+        plt.plot(*data[:, :2].T*1000)
+    plt.xlabel('x [mm]', fontsize=15)
+    plt.grid
+    plt.ylabel('y [mm]', fontsize=15)
+    plt.legend(["libsurvive", "SteamVR"])
+    plt.show()
+
+
 if __name__ == "__main__":
     exp_num = 1
     exp_type = "drift"
@@ -106,7 +120,7 @@ if __name__ == "__main__":
     )
     matrix = load_data(file_location)
     steamvr_diff = analyze_data(matrix[400:, :], time_frame=time_frame)
-
+    print(steamvr_diff.shape)
     exp_num = 1
     exp_type = "drift"
     num_point = 1
@@ -122,7 +136,9 @@ if __name__ == "__main__":
     )
     matrix = load_data(file_location)
     libsurvive_diff = analyze_data(matrix[500:, :], time_frame=time_frame)
-    print(libsurvive_diff.shape)
-    plot_data(steamvr_diff[:, :3])
-    plot_data(libsurvive_diff[:, :3])
-    # plt.show()
+    # print(libsurvive_diff.shape)
+    # plot_data(steamvr_diff[:, :3])
+    # plot_data(libsurvive_diff[:, :3])
+    # # plt.show()
+
+    plot_x_y_plane([libsurvive_diff, steamvr_diff])

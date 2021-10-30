@@ -4,8 +4,9 @@ from typing import List
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
+from scipy.stats import ttest_ind
 
-from utils.general import Framework, get_file_location, load_data, plot_cumultive
+from utils.general import Framework, get_file_location, load_data, plot_cumultive, box_plot
 from utils.averageQuaternions import averageQuaternions
 from utils.linear_algebrea_helper import (
     calc_percentile_error, distance_between_rotation_matrices,
@@ -105,8 +106,8 @@ def get_precision_distance(
 def run_analysis(
     error_data: List[float]
 ):
-    error_percentile = calc_percentile_error(error_data)
     eval_data = eval_error_list(error_list=error_data)
+    error_percentile = calc_percentile_error(error_data)
     print(np.array(eval_data))
     print(error_percentile)
 
@@ -131,7 +132,7 @@ if __name__ == "__main__":
         end_point=10
     )
     pos_err_steamvr, rot_err_steamvr = get_precision_distance(data=data_list)
-
+    print("Steamvr")
     run_analysis(pos_err_steamvr)
     run_analysis(rot_err_steamvr)
     exp_num = 1  # 1-10 are the points and 11-20 the next
@@ -147,9 +148,21 @@ if __name__ == "__main__":
     )
     pos_err_libsurvive, rot_err_libsurvive = get_precision_distance(data=data_list)
 
+    print("libsurvive")
     run_analysis(pos_err_libsurvive)
     run_analysis(rot_err_libsurvive)
 
-    plot_cumultive(
-        data=[pos_err_libsurvive, pos_err_steamvr]
-    )
+    print("ttest")
+    print(ttest_ind(
+        a=pos_err_libsurvive,
+        b=pos_err_steamvr,
+        equal_var=False,
+        alternative="less"
+    ))
+    pos_err_libsurvive = np.array(pos_err_libsurvive)*1000
+    pos_err_steamvr = np.array(pos_err_steamvr)*1000
+    # plot_cumultive(
+    #     data=[pos_err_libsurvive, pos_err_steamvr]
+    # )
+
+    box_plot(pos_err_libsurvive, pos_err_steamvr)

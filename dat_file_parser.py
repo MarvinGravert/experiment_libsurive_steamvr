@@ -75,6 +75,8 @@ def plot_3d_points(points: np.ndarray):
     """
     center = min+(max-min)/2
     size = max-min+[20, 20, 20]
+    print(max)
+    print(min)
     # https://stackoverflow.com/questions/30715083/python-plotting-a-wireframe-3d-cuboid
 
     ox, oy, oz = center
