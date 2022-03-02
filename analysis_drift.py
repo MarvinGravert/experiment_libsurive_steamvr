@@ -22,6 +22,27 @@ from utils.linear_algebrea_helper import (
 from utils.averageQuaternions import averageQuaternions
 
 
+def drift_path_position(points: np.ndarray) -> float:
+    sum = 0
+    for i in range(len(points)-1):
+        sum += np.linalg.norm(points[i, :]-points[i+1, :])
+    return sum
+
+
+def drift_path_position_niehorster(points: np.ndarray) -> float:
+    sum = 0
+    for i in range(len(points)-1):
+        sum += (np.linalg.norm(points[i, :]-points[i+1, :]))**2
+    return np.sqrt(sum/len(points))
+
+
+def distance_to_centroid(points, centroid) -> float:
+    sum = 0
+    for i in points:
+        sum += np.linalg.norm(i-centroid)
+    return sum/len(points)
+
+
 def analyze_data(
     data: np.ndarray,
     time_frame: float
@@ -72,6 +93,12 @@ def analyze_data(
         # alternative="greater"
     )
     print(f"For hypothesis that initial and final are the same: p_value={p_value}")
+    centroid = average_pose(data)
+    position = data[:, :3]
+    rotation = data[:, 3:]
+    print(f"Drift path {drift_path_position(position)}")
+    print(f"DFC: {distance_to_centroid(position,centroid[:3])}")
+    print(f"Sample to Sample Jitter {drift_path_position_niehorster(position)}")
     return centered_data_pos
 
 
@@ -119,7 +146,7 @@ if __name__ == "__main__":
         date=date
     )
     matrix = load_data(file_location)
-    steamvr_diff = analyze_data(matrix[400:, :], time_frame=time_frame)
+    steamvr_diff = analyze_data(matrix[000:, :], time_frame=time_frame)
     print(steamvr_diff.shape)
     exp_num = 1
     exp_type = "drift"
@@ -135,7 +162,7 @@ if __name__ == "__main__":
         date=date
     )
     matrix = load_data(file_location)
-    libsurvive_diff = analyze_data(matrix[500:, :], time_frame=time_frame)
+    libsurvive_diff = analyze_data(matrix[000:, :], time_frame=time_frame)
     # print(libsurvive_diff.shape)
     # plot_data(steamvr_diff[:, :3])
     # plot_data(libsurvive_diff[:, :3])
