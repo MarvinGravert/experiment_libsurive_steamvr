@@ -210,7 +210,7 @@ if __name__ == "__main__":
         date=date
     )
     err_pos_steamvr, err_rot_steamvr = calc_error(data_list=steam_data)
-    analyze_error(err_pos_steamvr)
+    # analyze_error(err_pos_steamvr)
     # analyze_error(err_rot_steamvr)
     """
         Libsurvive
@@ -230,10 +230,12 @@ if __name__ == "__main__":
     err_pos_steamvr = np.array(err_pos_steamvr)*1000
     err_pos_libsurvive = np.array(err_pos_libsurvive)*1000
 
-    # analyze_error(err_pos_steamvr)
-    # analyze_error(err_rot_steamvr)
-    # analyze_error(err_pos_libsurvive)
-    # analyze_error(err_rot_libsurvive)
+    print("Libsurvive")
+    analyze_error(err_pos_libsurvive)
+    analyze_error(err_rot_libsurvive)
+    print("SteamVR")
+    analyze_error(err_pos_steamvr)
+    analyze_error(err_rot_steamvr)
 
     # plot_cumultive(
     #     data=[err_pos_libsurvive, err_pos_steamvr]
@@ -279,19 +281,19 @@ if __name__ == "__main__":
     #     single_data_list.append(test)
     #     len_list.append(len(test))
     # single experiment plot
-    test = get_single_data(
-        exp_type=exp_type,
-        exp_num=exp_num,
-        framework=framework,
-        date=date,
-        num_point=2
-    )
-    single_data_list.append(test)
-    err_pos, err_rot = calc_error(data_list=single_data_list)
-    # last entry is not necessary as it represents the overall lenght
-    splits = np.cumsum(len_list)[:-1]
-    err_pos = np.array(err_pos)*1000
-    plot_mult_line(np.split(ary=err_pos, indices_or_sections=splits))
+    # test = get_single_data(
+    #     exp_type=exp_type,
+    #     exp_num=exp_num,
+    #     framework=framework,
+    #     date=date,
+    #     num_point=2
+    # )
+    # single_data_list.append(test)
+    # err_pos, err_rot = calc_error(data_list=single_data_list)
+    # # last entry is not necessary as it represents the overall lenght
+    # splits = np.cumsum(len_list)[:-1]
+    # err_pos = np.array(err_pos)*1000
+    # plot_mult_line(np.split(ary=err_pos, indices_or_sections=splits))
     """ plot reduced libsurvive
     """
     # exp_type = "dynamic_accuracy"

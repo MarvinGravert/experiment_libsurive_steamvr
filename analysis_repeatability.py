@@ -109,7 +109,7 @@ def run_analysis(
     eval_data = eval_error_list(error_list=error_data)
     error_percentile = calc_percentile_error(error_data)
     print(np.array(eval_data))
-    print(error_percentile)
+    # print(error_percentile)
 
 
 def plot_distances():
@@ -165,4 +165,15 @@ if __name__ == "__main__":
     #     data=[pos_err_libsurvive, pos_err_steamvr]
     # )
 
-    box_plot(pos_err_libsurvive, pos_err_steamvr)
+    # box_plot(pos_err_libsurvive, pos_err_steamvr)
+    mean_pos_list = list()
+    for point in data_list:  # 10 position
+        # 1
+        for measurement in point:  # <=10 measurements per position
+            cut_data = measurement[0:, :]
+            mean_pos_list.append(np.mean(cut_data[:, :3], 0))
+        # 2
+
+    t = np.array(mean_pos_list)
+    print(np.ptp(t, axis=0))
+    print(t.shape)

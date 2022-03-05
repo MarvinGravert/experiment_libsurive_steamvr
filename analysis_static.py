@@ -62,6 +62,8 @@ def calc_error(data_list: List[np.ndarray]) -> Tuple[float, float]:
     actual_hom_list = list()
     expected_hom = TrackerTransform().get_tracker_2_tracker(scaling=0.001)
     error_list = list()
+    t = np.array([i[:3, 3] for i in first_hom_list])
+    print(f"POS RANGE {np.ptp(t,axis=0)}")
     for first, second in zip(first_hom_list, second_hom_list):
         actual_hom = np.linalg.inv(second)@first
         actual_hom_list.append(actual_hom)
@@ -219,14 +221,16 @@ if __name__ == "__main__":
 
     err_pos_steamvr = np.array(err_pos_steamvr)*1000
     err_pos_libsurvive = np.array(err_pos_libsurvive)*1000
-    analyze_error(err_pos_steamvr)
-    analyze_error(err_rot_steamvr)
-
+    print("Libsurvive")
     analyze_error(err_pos_libsurvive)
     analyze_error(err_rot_libsurvive)
+
+    print("SteamVR")
+    analyze_error(err_pos_steamvr)
+    analyze_error(err_rot_steamvr)
 
     # plot_cumultive([err_pos_libsurvive, err_pos_steamvr])
     # plot_error_axis(err_pos_steamvr, err_pos_libsurvive)
     # print(err_pos_steamvr)
-    plot_bar(data_list_steamvr, error_data=err_pos_libsurvive)
+    # plot_bar(data_list_steamvr, error_data=err_pos_libsurvive)
     # box_plot([err_pos_libsurvive, err_pos_steamvr])

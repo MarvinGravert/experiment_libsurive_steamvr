@@ -40,6 +40,8 @@ def distance_to_centroid(points, centroid) -> float:
     sum = 0
     for i in points:
         sum += np.linalg.norm(i-centroid)
+    decenterd = points-centroid
+    print(f"PTP: {np.linalg.norm(np.ptp(decenterd,axis=0))}")
     return sum/len(points)
 
 
@@ -162,7 +164,7 @@ if __name__ == "__main__":
         date=date
     )
     matrix = load_data(file_location)
-    libsurvive_diff = analyze_data(matrix[000:, :], time_frame=time_frame)
+    libsurvive_diff = analyze_data(matrix[1000:, :], time_frame=time_frame)
     # print(libsurvive_diff.shape)
     # plot_data(steamvr_diff[:, :3])
     # plot_data(libsurvive_diff[:, :3])
